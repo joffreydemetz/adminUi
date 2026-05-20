@@ -1,0 +1,45 @@
+{
+    "name": "jdz/adminui",
+    "type": "library",
+    "description": "Framework-agnostic admin UI rendering (list, columns, triggers, toolbar)",
+    "keywords": [
+        "JDZ",
+        "utilities",
+        "html",
+        "twig",
+        "admin",
+        "ui"
+    ],
+    "homepage": "https://jdz.joffreydemetz.com/adminui",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Joffrey Demetz",
+            "email": "joffrey.demetz@gmail.com",
+            "homepage": "https://joffreydemetz.com",
+            "role": "Lead"
+        }
+    ],
+    "require": {
+        "php": ">=8.2",
+        "jdz/htmlrenderer": "^1.0",
+        "jdz/data": "^2.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^11.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "JDZ\\AdminUi\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "JDZ\\AdminUi\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "test": "phpunit --colors=always --testdox",
+        "test-coverage": "phpunit --coverage-html coverage"
+    }
+}
