@@ -52,4 +52,33 @@ class AdminToolbar extends Toolbar
 
     return $data;
   }
+
+  public function getToolbarButton(string $name, ?string $type = null, ?string $glyphicon = null): ToolbarButton
+  {
+    if ($this->hasElement($name)) {
+      return $this->getElement($name);
+    }
+
+    if (!$type) {
+      $type = $name;
+    }
+
+    $button = new ToolbarButton($name);
+    $button->setTag('a');
+    $button->setType($type);
+
+    if ($glyphicon) {
+      $button->setIcon('glyphicons glyphicons-' . $glyphicon);
+    }
+
+    if ('divider' === $type) {
+      $button->removeStyle('btn');
+      $button->addStyle('divider');
+      $button->setTag('span');
+    }
+
+    $this->addElement($button);
+
+    return $button;
+  }
 }

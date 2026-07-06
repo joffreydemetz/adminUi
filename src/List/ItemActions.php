@@ -37,6 +37,28 @@ class ItemActions extends Element
     return $this->addElement($button);
   }
 
+  public function getItemAction(string $name, string $href, string $style = 'default', ?string $glyphicon = null, ?string $text = null): Button
+  {
+    if ($this->hasElement($name)) {
+      return $this->getElement($name);
+    }
+
+    $button = new Button($name);
+    $button->addStyle('btn btn-' . $style);
+    $button->setTag('a');
+    $button->setHref($href);
+    if ($glyphicon) {
+      $button->setIcon('glyphicons glyphicons-' . $glyphicon);
+    }
+    if ($text) {
+      $button->setText($text);
+    }
+
+    $this->addElement($button);
+
+    return $button;
+  }
+
   public function toData(): array
   {
     $data = parent::toData();

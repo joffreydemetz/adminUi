@@ -21,4 +21,9 @@ interface RowInterface extends DataInterface
   public function isDisabled(): bool;
   public function getDisabledMessage(): string;
   public function disable(string $message = ''): static;
+  
+  /**
+   * Convert the row to an array suitable for list view rendering
+   */
+  public function toRowData(Columns $columns): array;
 }

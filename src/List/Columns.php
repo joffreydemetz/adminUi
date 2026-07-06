@@ -34,4 +34,20 @@ class Columns extends Element
 
     return $data;
   }
+
+  public function createColumn(string $name, string $type = '', string $title = '', bool $hidden = false, string $size = ''): Column
+  {
+    if ($this->hasElement($name)) {
+      return $this->getElement($name);
+    }
+
+    if ('' === $type) {
+      $type = $name;
+    }
+
+    $column = new Column($name, $type, $title, $hidden, $size);
+    $this->addElement($column);
+
+    return $column;
+  }
 }

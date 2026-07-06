@@ -69,4 +69,39 @@ class Row extends jData implements RowInterface
   {
     return $this->has($name);
   }
+
+  /**
+   * Convert the row to an array suitable for list view rendering.
+   * This includes column values, row state, actions, and triggers.
+   * 
+   * This method fixes the triggers regression where per-row edit/trash/reorder
+   * anchors were not being emitted in 5.0 (legacy christannaProd handled this).
+   * 
+   * @param Columns $columns The columns collection to extract values for
+   * @return array The row data with all required fields for list rendering
+   */
+  public function toRowData(Columns $columns): array
+  {
+    $row = [];
+    
+    // Copy column values from the data bag
+    foreach ($columns->getElements() as $column) {
+      $colName = $column->getName();
+      $row[$colName] = $this->get($colName, '');
+    }
+    
+    // Add row disabled state
+    if ($this->isDisabled()) {
+      $row['rowIsDisabled'] = true;
+      $row['disabledMessage'] = $this->getDisabledMessage();
+    }
+    
+    // Add actions from ItemActions
+    $row['actions'] = $this->getButtons()->toData()['buttons'];
+    
+    // Add triggers from Triggers - THIS FIXES THE REGRESSION
+    $row['triggers'] = $this->getTriggers()->toData();
+    
+    return $row;
+  }
 }

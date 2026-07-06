@@ -29,4 +29,25 @@ class Triggers extends Element
 
     return $data;
   }
+
+  public function getItemTrigger(string $name, ?string $type = null, ?string $glyphicon = null): Trigger
+  {
+    if ($this->hasElement($name)) {
+      return $this->getElement($name);
+    }
+
+    if (!$type) {
+      $type = $name;
+    }
+
+    $trigger = new Trigger($name);
+    $trigger->setType($type);
+    if ($glyphicon) {
+      $trigger->setIcon('glyphicons glyphicons-' . $glyphicon);
+    }
+
+    $this->addElement($trigger);
+
+    return $trigger;
+  }
 }
