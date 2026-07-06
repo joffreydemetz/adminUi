@@ -12,6 +12,9 @@ admin bundle — no HTTP, no database, no app lifecycle. Built on
 |---|---|
 | `JDZ\AdminUi\List` | `Columns`, `Column`, `Triggers`, `Trigger`, `ItemActions`, `Row`, `RowInterface` |
 | `JDZ\AdminUi\Toolbar` | `Toolbar`, `ToolbarButton`, `AdminToolbar` |
+| `JDZ\AdminUi\Item` | `Item`, `ItemSection`, `ItemField`, `ItemTable` — read-only detail views |
+| `JDZ\AdminUi\Form` | `FormView` (wraps a [`jdz/form`](https://jdz.joffreydemetz.com/form) form with fieldset panel states), `FormActions` |
+| `JDZ\AdminUi\ValueObject` | `ModalChrome`, `Filterbar` |
 
 ## Scope
 
