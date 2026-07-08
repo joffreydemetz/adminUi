@@ -52,4 +52,14 @@ class ToolbarButton extends Button
 
     return $data;
   }
+
+  protected function validate(): void
+  {
+    // divider strip separators render as <span class="divider"> — no link semantics
+    if ('divider' === $this->type && 'span' === $this->tag) {
+      return;
+    }
+
+    parent::validate();
+  }
 }
