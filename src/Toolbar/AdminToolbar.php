@@ -38,11 +38,26 @@ class AdminToolbar extends Toolbar
 
   public function toData(): array
   {
+    // Drop dangling dividers — leading, trailing and doubled ones. Dividers
+    // are declared around contextual buttons (beforePublish, beforeTrash, ...)
+    // that may not have been added.
+    $prevWasDivider = true;
+    $lastDividerKey = null;
     foreach ($this->elements as $key => $button) {
       if ('divider' === $button->getType()) {
-        $this->removeElement($key);
+        if ($prevWasDivider) {
+          $this->removeElement($key);
+          continue;
+        }
+        $prevWasDivider = true;
+        $lastDividerKey = $key;
+      } else {
+        $prevWasDivider = false;
+        $lastDividerKey = null;
       }
-      break;
+    }
+    if (null !== $lastDividerKey) {
+      $this->removeElement($lastDividerKey);
     }
 
     $data = parent::toData();
