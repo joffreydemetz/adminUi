@@ -43,12 +43,5 @@
     "scripts": {
         "test": "phpunit --colors=always --testdox",
         "test-coverage": "phpunit --coverage-html coverage"
-    },
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/joffreydemetz/ui.git",
-            "_comment": "temporary until jdz/ui is registered on Packagist"
-        }
-    ]
+    }
 }
