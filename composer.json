@@ -1,7 +1,7 @@
 {
     "name": "jdz/adminui",
     "type": "library",
-    "description": "Framework-agnostic admin UI rendering (list, columns, triggers, toolbar)",
+    "description": "Framework-agnostic admin UI rendering (list, columns, triggers, toolbar) and shared admin controller traits",
     "keywords": [
         "JDZ",
         "utilities",
@@ -25,10 +25,18 @@
         "jdz/htmlrenderer": "^1.0",
         "jdz/data": "^2.0",
         "jdz/form": "^1.0",
-        "jdz/ui": "^1.0"
+        "jdz/ui": "^1.0",
+        "psr/http-message": "^1.1 || ^2.0"
     },
     "require-dev": {
-        "phpunit/phpunit": "^11.0"
+        "phpunit/phpunit": "^11.0",
+        "jdz/mediamanager": "^2.0",
+        "symfony/http-foundation": "^7.4",
+        "slim/psr7": "^1.6"
+    },
+    "suggest": {
+        "jdz/mediamanager": "Required by JDZ\\AdminUi\\Controller\\MediasControllerTrait — the media library engine it drives",
+        "symfony/http-foundation": "Required by JDZ\\AdminUi\\Controller\\MediasControllerTrait — the uploaded-file type jdz/mediamanager speaks"
     },
     "autoload": {
         "psr-4": {
