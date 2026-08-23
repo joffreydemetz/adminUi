@@ -68,6 +68,28 @@ them): `json/mediamanager/{init,fs,upload}`,
 `rename` and `move` folder/file paths answer a GET with the dialog and a POST
 with the operation.
 
+### The picker
+
+`json/medias/selector` renders the modal `JiZy.Admin.mediaPicker` opens — on a
+form's image field, and on the rich-text editor's image button. It always ships
+the folder list alongside the tree, so the picker can switch folders without
+going through the media manager screen, and `json/mediamanager/folder/create`
+accepts a posted `parent` for the same reason: the picker creates a folder where
+*it* is looking, not where the session last left the media screen. The created
+folder comes back in `folder` so the caller can reload straight into it.
+
+`?mode=editor` adds the caption / alt / anchoring fieldset the editor needs to
+build its `<figure>`. Re-opening the picker on an existing figure passes `src`,
+`alt`, `caption` and `align` back in and they arrive prefilled — `align` is
+whitelisted against `MEDIA_ALIGNMENTS` rather than echoed, since it is query
+string on its way into a view.
+
+```
+GET json/medias/selector?folder=blog
+GET json/medias/selector?mode=editor&src=media/blog/x.jpg&alt=…&caption=…&align=right
+POST json/mediamanager/folder/create   m[parent]=blog&m[folderName]=2026
+```
+
 `PsrUploadedFileBridge` turns a PSR-7 upload into the HttpFoundation one the
 uploader takes. It hands over the mime **detected from the bytes**, not the one
 the browser declared, and the trait additionally checks the stored extension
