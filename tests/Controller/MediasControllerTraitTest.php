@@ -266,6 +266,48 @@ class MediasControllerTraitTest extends TestCase
     $this->assertFileDoesNotExist($this->root . '/photos/paysage.gif');
   }
 
+  public function testTheCreatedFolderComesBackSoThePickerCanOpenIt(): void
+  {
+    $this->controller->loadFs($this->get(['folder' => '']), new Response());
+
+    $created = $this->json($this->controller->folderCreate(
+      $this->post(['m' => ['folderName' => 'croquis']]),
+      new Response(),
+    ));
+
+    $this->assertSame('croquis', $created['folder']);
+  }
+
+  public function testThePickerCreatesInTheFolderItPostsNotTheSessionOne(): void
+  {
+    // The session is looking at the root; the picker's own select is on photos.
+    $this->controller->loadFs($this->get(['folder' => '']), new Response());
+
+    $created = $this->json($this->controller->folderCreate(
+      $this->post(['m' => ['parent' => 'photos', 'folderName' => 'bretagne']]),
+      new Response(),
+    ));
+
+    $this->assertTrue($created['success']);
+    $this->assertSame('photos/bretagne', $created['folder']);
+    $this->assertDirectoryExists($this->root . '/photos/bretagne');
+    $this->assertDirectoryDoesNotExist($this->root . '/bretagne');
+  }
+
+  public function testAnEmptyPostedParentMeansTheRootNotTheSessionFolder(): void
+  {
+    $this->controller->loadFs($this->get(['folder' => 'photos']), new Response());
+
+    $created = $this->json($this->controller->folderCreate(
+      $this->post(['m' => ['parent' => '', 'folderName' => 'divers']]),
+      new Response(),
+    ));
+
+    $this->assertSame('divers', $created['folder']);
+    $this->assertDirectoryExists($this->root . '/divers');
+    $this->assertDirectoryDoesNotExist($this->root . '/photos/divers');
+  }
+
   // ------------------------------------------------------------ selector --
 
   public function testSelectorGroupsImagesPerFolder(): void
@@ -276,6 +318,65 @@ class MediasControllerTraitTest extends TestCase
     $this->assertStringContainsString('data-m-url="../media/photos/une-photo.gif"', $data['content']);
     $this->assertStringContainsString('data-m-orientation="square"', $data['content']);
     $this->assertSame('image/gif,image/jpeg,.gif,.jpg', $data['dz']['acceptedFiles']);
+  }
+
+  public function testSelectorAlwaysCarriesTheFolderList(): void
+  {
+    // The picker switches folders on its own; it never sees the media manager
+    // screen, so the list has to travel with the view.
+    $data = $this->json($this->controller->selector($this->get(), new Response()));
+
+    $this->assertStringContainsString('<option value="photos">', $data['content']);
+  }
+
+  public function testSelectorIsNotInEditorModeByDefault(): void
+  {
+    $data = $this->json($this->controller->selector($this->get(), new Response()));
+
+    $this->assertStringContainsString('data-mode=""', $data['content']);
+    $this->assertStringNotContainsString('m-editor', $data['content']);
+  }
+
+  public function testEditorModeWithNoCurrentFigureRendersNoPrefill(): void
+  {
+    $data = $this->json($this->controller->selector($this->get(['mode' => 'editor']), new Response()));
+
+    $this->assertStringContainsString('data-mode="editor"', $data['content']);
+    $this->assertStringNotContainsString('m-editor', $data['content']);
+  }
+
+  public function testEditorModePrefillsTheFigureBeingEdited(): void
+  {
+    $data = $this->json($this->controller->selector($this->get([
+      'mode' => 'editor',
+      'src' => 'media/photos/une-photo.gif',
+      'alt' => 'Une photo',
+      'caption' => 'En Bretagne',
+      'align' => 'right',
+    ]), new Response()));
+
+    $this->assertStringContainsString('data-src="media/photos/une-photo.gif"', $data['content']);
+    $this->assertStringContainsString('data-alt="Une photo"', $data['content']);
+    $this->assertStringContainsString('data-caption="En Bretagne"', $data['content']);
+    $this->assertStringContainsString('data-align="right"', $data['content']);
+  }
+
+  public function testEditorModeRefusesAnAnchoringItDoesNotKnow(): void
+  {
+    $data = $this->json($this->controller->selector($this->get([
+      'mode' => 'editor',
+      'src' => 'media/x.gif',
+      'align' => 'javascript:alert(1)',
+    ]), new Response()));
+
+    $this->assertStringContainsString('data-align=""', $data['content']);
+  }
+
+  public function testAnUnknownModeIsNotEditorMode(): void
+  {
+    $data = $this->json($this->controller->selector($this->get(['mode' => 'nonsense']), new Response()));
+
+    $this->assertStringContainsString('data-mode=""', $data['content']);
   }
 
   // ------------------------------------------------------------- helpers --
@@ -369,7 +470,19 @@ final class TestMediasController
   protected function mediaRenderFragment(string $view, array $vData): string
   {
     if (\str_ends_with($view, 'selector.tmpl')) {
-      $html = '';
+      $html = '<div data-mode="' . $vData['mode'] . '">';
+
+      foreach ($vData['folders'] as $one) {
+        $html .= '<option value="' . $one['value'] . '">' . $one['name'] . '</option>';
+      }
+
+      if (null !== $vData['current']) {
+        $html .= '<fieldset class="m-editor"'
+          . ' data-src="' . $vData['current']['src'] . '"'
+          . ' data-alt="' . $vData['current']['alt'] . '"'
+          . ' data-caption="' . $vData['current']['caption'] . '"'
+          . ' data-align="' . $vData['current']['align'] . '"></fieldset>';
+      }
 
       foreach ($vData['tree'] as $folder) {
         foreach ($folder->files as $file) {
@@ -378,7 +491,7 @@ final class TestMediasController
         }
       }
 
-      return $html;
+      return $html . '</div>';
     }
 
     if (\str_ends_with($view, 'finfos.tmpl')) {

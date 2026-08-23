@@ -52,6 +52,12 @@ use Psr\Http\Message\UploadedFileInterface;
  */
 trait MediasControllerTrait
 {
+  /** The picker mode the rich-text editor opens the library in. */
+  public const MEDIA_MODE_EDITOR = 'editor';
+
+  /** How a figure may be anchored — the front CSS's `pull-*` classes. */
+  public const MEDIA_ALIGNMENTS = ['left', 'right'];
+
   private ?MediaManager $mediaManagerInstance = null;
   private ?array $mediaStateCache = null;
 
@@ -261,18 +267,33 @@ trait MediasControllerTrait
     );
   }
 
-  /** POST json/mediamanager/folder/create */
+  /**
+   * POST json/mediamanager/folder/create
+   *
+   * The media manager screen creates inside whatever folder the session says it
+   * is looking at; the picker has its own folder select and is not that screen,
+   * so it posts `parent` explicitly. The created folder comes back in `folder`
+   * so the caller can reload straight into it.
+   */
   public function folderCreate(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
   {
     $data = $this->mediaPosted($request);
 
-    $result = $this->mediaManager()->createFolder($this->mediaGet('folder'), (string)($data['folderName'] ?? ''));
+    $parent = \array_key_exists('parent', $data)
+      ? $this->mediaManager()->decodePath((string)$data['parent'])
+      : $this->mediaGet('folder');
+
+    $name = (string)($data['folderName'] ?? '');
+
+    $result = $this->mediaManager()->createFolder($parent, $name);
 
     if (false === $result->isSuccess()) {
       return $this->mediaFail($response, $result);
     }
 
-    return $this->mediaSucceed($response, $result);
+    return $this->mediaSucceed($response, $result, [
+      'folder' => \trim(('' === $parent ? '' : $parent . '/') . \trim($name), '/'),
+    ]);
   }
 
   /** GET json/mediamanager/folder/rename */
@@ -677,14 +698,21 @@ trait MediasControllerTrait
   // -------------------------------------------------------------- selector --
 
   /**
-   * GET json/medias/selector?folder= — the picker `imageSelector` opens on a
-   * form field.
+   * GET json/medias/selector?folder=&mode= — the picker `JiZy.Admin.mediaPicker`
+   * opens, both on a form field and from the rich-text editor.
+   *
+   * `mode=editor` adds the caption / alt / anchoring fieldset the editor needs
+   * to build its `<figure>`, prefilled from the figure being edited when there
+   * is one. The folder list rides along in both modes so the picker can switch
+   * folders without going through the media manager screen.
    */
   public function selector(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
   {
     $config = $this->mediaConfig();
+    $query = $request->getQueryParams();
 
-    $folder = $this->mediaManager()->decodePath((string)($request->getQueryParams()['folder'] ?? ''));
+    $folder = $this->mediaManager()->decodePath((string)($query['folder'] ?? ''));
+    $mode = self::MEDIA_MODE_EDITOR === (string)($query['mode'] ?? '') ? self::MEDIA_MODE_EDITOR : '';
 
     $tree = $this->mediaManager()->getSelectorList(
       $folder,
@@ -695,6 +723,9 @@ trait MediasControllerTrait
     return $this->mediaJson($response, [
       'content' => $this->mediaRenderFragment($this->mediaView('selector'), [
         'folder' => $folder,
+        'folders' => $this->mediaManager()->getFolderSelectList(),
+        'mode' => $mode,
+        'current' => self::MEDIA_MODE_EDITOR === $mode ? $this->mediaCurrentFigure($query) : null,
         'tree' => $tree,
         'authExtsImage' => \implode(', ', $config->extsImage),
         'maxWeightImage' => $config->maxWeightImage,
@@ -702,6 +733,31 @@ trait MediasControllerTrait
       'dz' => $this->mediaDropzoneConfig('image'),
       'stats' => $this->mediaStats(),
     ]);
+  }
+
+  /**
+   * The figure the editor is re-opening the picker on, or null when it is
+   * inserting a new one. This is query-string input on its way back out through
+   * a view, so `align` is whitelisted rather than echoed.
+   *
+   * @param array<string,mixed> $query
+   * @return array{src: string, alt: string, caption: string, align: string}|null
+   */
+  protected function mediaCurrentFigure(array $query): ?array
+  {
+    $src = \trim((string)($query['src'] ?? ''));
+    if ('' === $src) {
+      return null;
+    }
+
+    $align = (string)($query['align'] ?? '');
+
+    return [
+      'src' => $src,
+      'alt' => (string)($query['alt'] ?? ''),
+      'caption' => (string)($query['caption'] ?? ''),
+      'align' => \in_array($align, self::MEDIA_ALIGNMENTS, true) ? $align : '',
+    ];
   }
 
   // ------------------------------------------------------------- internals --
