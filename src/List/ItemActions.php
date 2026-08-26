@@ -12,6 +12,7 @@ namespace JDZ\AdminUi\List;
 use JDZ\Renderer\Button;
 use JDZ\Renderer\Element;
 use JDZ\Renderer\ElementsTrait;
+use JDZ\AdminUi\IconPrefix;
 
 /**
  * @author Joffrey Demetz <joffrey.demetz@gmail.com>
@@ -31,7 +32,7 @@ class ItemActions extends Element
     }
 
     if ($icon) {
-      $button->setIcon('glyphicons glyphicons-' . $icon);
+      $button->setIcon(IconPrefix::for($icon));
     }
 
     return $this->addElement($button);
@@ -48,7 +49,7 @@ class ItemActions extends Element
     $button->setTag('a');
     $button->setHref($href);
     if ($glyphicon) {
-      $button->setIcon('glyphicons glyphicons-' . $glyphicon);
+      $button->setIcon(IconPrefix::for($glyphicon));
     }
     if ($text) {
       $button->setText($text);

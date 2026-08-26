@@ -11,6 +11,7 @@ namespace JDZ\AdminUi\List;
 
 use JDZ\Renderer\Element;
 use JDZ\Renderer\ElementsTrait;
+use JDZ\AdminUi\IconPrefix;
 
 /**
  * @author Joffrey Demetz <joffrey.demetz@gmail.com>
@@ -43,7 +44,7 @@ class Triggers extends Element
     $trigger = new Trigger($name);
     $trigger->setType($type);
     if ($glyphicon) {
-      $trigger->setIcon('glyphicons glyphicons-' . $glyphicon);
+      $trigger->setIcon(IconPrefix::for($glyphicon));
     }
 
     $this->addElement($trigger);

@@ -9,6 +9,8 @@
 
 namespace JDZ\AdminUi\Toolbar;
 
+use JDZ\AdminUi\IconPrefix;
+
 /**
  * @author Joffrey Demetz <joffrey.demetz@gmail.com>
  */
@@ -83,7 +85,7 @@ class AdminToolbar extends Toolbar
     $button->setType($type);
 
     if ($glyphicon) {
-      $button->setIcon('glyphicons glyphicons-' . $glyphicon);
+      $button->setIcon(IconPrefix::for($glyphicon));
     }
 
     if ('divider' === $type) {
