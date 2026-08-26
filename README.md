@@ -16,6 +16,7 @@ admin bundle — no HTTP, no database, no app lifecycle. Built on
 | `JDZ\AdminUi\Form` | `FormView` (wraps a [`jdz/form`](https://jdz.joffreydemetz.com/form) form with fieldset panel states), `FormActions` |
 | `JDZ\AdminUi\ValueObject` | `ModalChrome`, `Filterbar` |
 | `JDZ\AdminUi\Controller` | `MediasControllerTrait`, `PsrUploadedFileBridge` — the shared /admin media manager (opt-in, see below) |
+| `JDZ\AdminUi` | `IconPrefix` — which icon vocabulary the toolbars and triggers paint (see below) |
 
 ## Scope
 
@@ -27,6 +28,21 @@ The one exception is `JDZ\AdminUi\Controller\` — shared admin *behaviour*, for
 the screens where six back offices would otherwise grow six copies of the same
 file. It is opt-in: nothing else in the package touches HTTP, and the extra
 dependencies are `suggest`ed rather than required.
+
+## Icons
+
+Toolbar buttons and row triggers take a bare icon name (`'plus'`, `'edit'`) and
+render it as a CSS class. Which class is the admin's business, not the package's:
+
+```php
+use JDZ\AdminUi\IconPrefix;
+
+IconPrefix::use('icon icon-');   // -> class="icon icon-plus"
+```
+
+The default is `glyphicons glyphicons-`, which is what every consumer painted
+before this was configurable — so an admin that says nothing keeps exactly the
+markup it had. Set it once at bootstrap, before the first toolbar is built.
 
 ## The media manager
 
