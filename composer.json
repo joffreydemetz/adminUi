@@ -24,7 +24,7 @@
         "php": ">=8.2",
         "jdz/htmlrenderer": "^1.0",
         "jdz/data": "^2.0",
-        "jdz/form": "^1.0",
+        "jdz/form": "^1.1",
         "jdz/ui": "^1.0",
         "psr/http-message": "^1.1 || ^2.0"
     },
