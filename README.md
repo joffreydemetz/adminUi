@@ -15,7 +15,8 @@ admin bundle — no HTTP, no database, no app lifecycle. Built on
 | `JDZ\AdminUi\Item` | `Item`, `ItemSection`, `ItemField`, `ItemTable` — read-only detail views |
 | `JDZ\AdminUi\Form` | `FormView` (wraps a [`jdz/form`](https://jdz.joffreydemetz.com/form) form with fieldset panel states), `FormActions` |
 | `JDZ\AdminUi\ValueObject` | `ModalChrome`, `Filterbar` |
-| `JDZ\AdminUi\Controller` | `MediasControllerTrait`, `PsrUploadedFileBridge` — the shared /admin media manager (opt-in, see below) |
+| `JDZ\AdminUi\Contract` | `AdminServiceInterface`, `ListState`, `SaveResult` — what an entity admin asks of the app |
+| `JDZ\AdminUi\Controller` | `AdminControllerTrait` — the shared entity admin; `MediasControllerTrait`, `PsrUploadedFileBridge` — the shared /admin media manager (both opt-in, see below) |
 | `JDZ\AdminUi` | `IconPrefix` — which icon vocabulary the toolbars and triggers paint (see below) |
 
 ## Scope
@@ -43,6 +44,110 @@ IconPrefix::use('icon icon-');   // -> class="icon icon-plus"
 The default is `glyphicons glyphicons-`, which is what every consumer painted
 before this was configurable — so an admin that says nothing keeps exactly the
 markup it had. Set it once at bootstrap, before the first toolbar is built.
+
+## The entity admin
+
+`JDZ\AdminUi\Controller\AdminControllerTrait` is one back-office component —
+list, form, publish, delete, reorder, filterbar — as a single implementation.
+It owns the whole callisto task vocabulary
+(`list add edit save apply cancel publish unpublish trash changeorder
+setFilters resetFilters` plus the `json` publish/unpublish pair) and every
+value object the list screen needs.
+
+It splits into three questions.
+
+**What the component is** — four hooks a controller must answer: its slug, its
+title, how one row paints (`buildRow`), and what its form looks like
+(`buildForm`).
+
+**Where the data lives** — `service()`, returning a
+`JDZ\AdminUi\Contract\AdminServiceInterface`. That is the whole data contract:
+
+```php
+public function count(ListState $state): int;
+public function list(ListState $state): array;
+public function find(int $id): ?object;
+public function save(array $input, ?int $id): SaveResult;
+public function setPublished(array $ids, int $published): void;
+public function delete(array $ids): void;
+public function moveOrdering(int $id, int $newValue): void;
+```
+
+The controller never sees a query. `ListState` is the filterbar window
+(`limit`, `offset`, `search`, `orderBy`, plus whatever extra selects the site
+declared — `$state->filter('idCat')` casts one to the type of its default);
+`SaveResult` is `ok($id)` or `fail(['title' => 'Titre requis.'])`, and a
+failure is what turns a save into a 422 re-render of the posted values instead
+of a redirect. Validation and business rules live in the service, which is the
+only layer that knows how a row is stored.
+
+**How the site's chrome works** — six `admin*` hooks (`adminRender`,
+`adminFlash`, `adminCsrfToken`, `adminFilterState`, `adminFiltersSet`,
+`adminFiltersReset`), the same shape `MediasControllerTrait` uses for its
+`mediaRender*` / `mediaState*` pair. Answer them once, in an abstract site-side
+`AdminController`, and every component extends that:
+
+```php
+abstract class AdminController                    // the site, once
+{
+  use JDZ\AdminUi\Controller\AdminControllerTrait;
+
+  public function __construct(
+    protected AdminRenderer $renderer,
+    protected Session $session,
+    protected Filters $filters,
+  ) {}
+
+  protected function adminRender(ResponseInterface $r, string $view, array $vData, string $c, string $task): ResponseInterface
+  {
+    return $this->renderer->render($r, $view, $vData, $c, $task);
+  }
+
+  protected function adminFlash(string $message, string $type = 'success'): void { $this->renderer->flash($message, $type); }
+  protected function adminCsrfToken(): string { return $this->session->csrfToken(); }
+  protected function adminFilterState(string $c): array { return $this->filters->for($c); }
+  protected function adminFiltersSet(string $c, array $filter): void { $this->filters->set($c, $filter); }
+  protected function adminFiltersReset(string $c): void { $this->filters->reset($c); }
+}
+
+final class FormationsController extends AdminController   // one component
+{
+  public function __construct(AdminRenderer $r, Session $s, Filters $f, private FormationService $service)
+  {
+    parent::__construct($r, $s, $f);
+  }
+
+  protected function component(): string { return 'formations'; }
+  protected function title(): string { return 'Formations'; }
+  protected function service(): AdminServiceInterface { return $this->service; }
+  protected function buildRow(object $item, bool $orderValid): Row { … }
+  protected function buildForm(?object $item, array $input = []): Form { … }
+}
+```
+
+Hold the concrete service in the controller, not the interface — a container
+cannot instantiate an interface.
+
+Everything else has a default worth keeping: `buildColumns()` paints the usual
+checkbox / label / published / ordering / id / triggers set,
+`adminBaseUrl()` is `/admin`, `hasSearch()` is off, `filterOptions()` is empty,
+`orderingSort()` is `'ordering ASC'` (an admin listing newest first returns
+`'ordering DESC'` and drag-reorder follows), and `adminText()` holds the French
+wording of every flash, tooltip and confirm — override the keys a site wants to
+reword.
+
+`JDZ\AdminUi\Form\FiltersForm` is the filterbar form the trait builds: the
+searchbox, the limit select, and one select per declared filter, under the
+exact fieldset and field names `Filterbar::fromFormData()` and the admin
+bundle read.
+
+### The JS contract, which must not drift
+
+`jizy.admin.js` rewrites the toolbar hrefs with `?id=1,2,3`, posts the
+filterbar to `json/{component}/setFilters/`, expects `{success:true}` back from
+`changeorder`, and reads the list view data off `ordervalid`, `orderDir`,
+`listHeaders`, `items`, `pagination` and `filterbar.filterActive`. The trait
+exists to keep exactly that shape in one place.
 
 ## The media manager
 
