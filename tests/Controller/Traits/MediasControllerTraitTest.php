@@ -7,9 +7,9 @@
  * file that was distributed with this source code.
  */
 
-namespace JDZ\AdminUi\Tests\Controller;
+namespace JDZ\AdminUi\Tests\Controller\Traits;
 
-use JDZ\AdminUi\Controller\MediasControllerTrait;
+use JDZ\AdminUi\Controller\Traits\MediasControllerTrait;
 use JDZ\MediaManager\ValueObject\MediaConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
@@ -22,7 +22,7 @@ use Slim\Psr7\UploadedFile;
  * The trait against a real (temporary) media library, driven the way
  * mediamanager.js drives it.
  *
- * @covers \JDZ\AdminUi\Controller\MediasControllerTrait
+ * @covers \JDZ\AdminUi\Controller\Traits\MediasControllerTrait
  * @covers \JDZ\AdminUi\Controller\PsrUploadedFileBridge
  */
 class MediasControllerTraitTest extends TestCase
@@ -219,6 +219,15 @@ class MediasControllerTraitTest extends TestCase
       $this->json($this->controller->fileDelete($this->get(['fileName' => '../une-photo.gif']), new Response()))['error'],
     );
     $this->assertFileExists($this->root . '/photos/une-photo.gif');
+  }
+
+  public function testTheMediaBaseUrlIsOverridable(): void
+  {
+    $relocated = new RelocatedMediasController($this->root);
+
+    $data = $this->json($relocated->initFs($this->get(), new Response()));
+
+    $this->assertSame('/bureau/json/mediamanager/upload', $data['dz']['url']);
   }
 
   // -------------------------------------------------------------- upload --
@@ -440,7 +449,7 @@ class MediasControllerTraitTest extends TestCase
  * The smallest consumer the trait admits : media config, a translator that
  * echoes keys back, an in-memory state bag and stub renderers.
  */
-final class TestMediasController
+class TestMediasController
 {
   use MediasControllerTrait;
 
@@ -534,5 +543,17 @@ final class TestMediasController
   protected function mediaSelectorImage(string $relPath, int $width): ?array
   {
     return ['thumb' => 'thumb:' . $relPath . '@' . $width, 'orientation' => 'square'];
+  }
+}
+
+/**
+ * A site whose media manager lives under another prefix: one hook, which the
+ * medias controller owns on its own because it does not extend the entity admin.
+ */
+final class RelocatedMediasController extends TestMediasController
+{
+  protected function mediaBaseUrl(): string
+  {
+    return '/bureau';
   }
 }

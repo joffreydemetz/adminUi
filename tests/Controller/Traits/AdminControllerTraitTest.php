@@ -7,12 +7,12 @@
  * file that was distributed with this source code.
  */
 
-namespace JDZ\AdminUi\Tests\Controller;
+namespace JDZ\AdminUi\Tests\Controller\Traits;
 
 use JDZ\AdminUi\Contract\AdminServiceInterface;
 use JDZ\AdminUi\Contract\ListState;
 use JDZ\AdminUi\Contract\SaveResult;
-use JDZ\AdminUi\Controller\AdminControllerTrait;
+use JDZ\AdminUi\Controller\Traits\AdminControllerTrait;
 use JDZ\Form\Field\Hidden as HiddenField;
 use JDZ\Form\Field\Text;
 use JDZ\Form\Form;
@@ -26,7 +26,7 @@ use Slim\Psr7\Response;
 /**
  * The trait driven the way jizy.admin.js drives it, over an in-memory service.
  *
- * @covers \JDZ\AdminUi\Controller\AdminControllerTrait
+ * @covers \JDZ\AdminUi\Controller\Traits\AdminControllerTrait
  * @covers \JDZ\AdminUi\Contract\ListState
  * @covers \JDZ\AdminUi\Contract\SaveResult
  */
@@ -203,6 +203,22 @@ class AdminControllerTraitTest extends TestCase
 
     $this->assertSame(302, $response->getStatusCode());
     $this->assertSame('/admin/things/list/', $response->getHeaderLine('Location'));
+  }
+
+  public function testTheBaseUrlIsOverridable(): void
+  {
+    $relocated = new RelocatedAdminController($this->service);
+
+    $response = $relocated->cancel($this->get(), new Response());
+
+    $this->assertSame(302, $response->getStatusCode());
+    $this->assertSame('/bureau/things/list/', $response->getHeaderLine('Location'));
+    // and the whole screen follows, not just the redirect
+    $relocated->list($this->get(), new Response());
+    $this->assertSame(
+      '/bureau/things/add/',
+      $relocated->lastVData['toolbar']['buttons'][0]['attrs']['href'],
+    );
   }
 
   // ----------------------------------------------------------- selection --
@@ -457,7 +473,7 @@ final class TestForm extends Form
  * would normally reach through AdminRenderer / Session / Filters is a
  * recording stub here.
  */
-final class TestAdminController
+class TestAdminController
 {
   use AdminControllerTrait;
 
@@ -560,5 +576,17 @@ final class TestAdminController
   protected function adminFiltersReset(string $component): void
   {
     $this->filtersReset = $component;
+  }
+}
+
+/**
+ * A site that serves its back office somewhere else than the package default:
+ * one override, and every task URL follows.
+ */
+final class RelocatedAdminController extends TestAdminController
+{
+  protected function adminBaseUrl(): string
+  {
+    return '/bureau';
   }
 }

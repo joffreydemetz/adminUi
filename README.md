@@ -16,7 +16,8 @@ admin bundle — no HTTP, no database, no app lifecycle. Built on
 | `JDZ\AdminUi\Form` | `FormView` (wraps a [`jdz/form`](https://jdz.joffreydemetz.com/form) form with fieldset panel states), `FormActions` |
 | `JDZ\AdminUi\ValueObject` | `ModalChrome`, `Filterbar` |
 | `JDZ\AdminUi\Contract` | `AdminServiceInterface`, `ListState`, `SaveResult` — what an entity admin asks of the app |
-| `JDZ\AdminUi\Controller` | `AdminControllerTrait` — the shared entity admin; `MediasControllerTrait`, `PsrUploadedFileBridge` — the shared /admin media manager (both opt-in, see below) |
+| `JDZ\AdminUi\Controller\Traits` | `AdminControllerTrait` — the shared entity admin; `MediasControllerTrait` — the shared media manager (both opt-in, see below) |
+| `JDZ\AdminUi\Controller` | `PsrUploadedFileBridge` — the PSR-7 → HttpFoundation uploaded-file adapter the media manager needs |
 | `JDZ\AdminUi` | `IconPrefix` — which icon vocabulary the toolbars and triggers paint (see below) |
 
 ## Scope
@@ -29,6 +30,17 @@ The one exception is `JDZ\AdminUi\Controller\` — shared admin *behaviour*, for
 the screens where six back offices would otherwise grow six copies of the same
 file. It is opt-in: nothing else in the package touches HTTP, and the extra
 dependencies are `suggest`ed rather than required.
+
+## Upgrading to 2.0.0
+
+Two breaking changes, both one-line fixes:
+
+- The two controller traits moved to `JDZ\AdminUi\Controller\Traits\` — update
+  the `use` lines. The old names still resolve (as deprecated traits that
+  compose the new ones) so an upgrade need not be atomic; they go in 2.1.0.
+- `adminBaseUrl()` and the new `mediaBaseUrl()` both default to `/admin`.
+  A site served from another prefix must override them — the package no longer
+  assumes one.
 
 ## Icons
 
@@ -47,7 +59,7 @@ markup it had. Set it once at bootstrap, before the first toolbar is built.
 
 ## The entity admin
 
-`JDZ\AdminUi\Controller\AdminControllerTrait` is one back-office component —
+`JDZ\AdminUi\Controller\Traits\AdminControllerTrait` is one back-office component —
 list, form, publish, delete, reorder, filterbar — as a single implementation.
 It owns the whole callisto task vocabulary
 (`list add edit save apply cancel publish unpublish trash changeorder
@@ -90,7 +102,7 @@ only layer that knows how a row is stored.
 ```php
 abstract class AdminController                    // the site, once
 {
-  use JDZ\AdminUi\Controller\AdminControllerTrait;
+  use JDZ\AdminUi\Controller\Traits\AdminControllerTrait;
 
   public function __construct(
     protected AdminRenderer $renderer,
@@ -167,7 +179,7 @@ A consuming controller supplies the per-site parts and nothing else:
 ```php
 final class MediasController extends AdminController
 {
-    use JDZ\AdminUi\Controller\MediasControllerTrait;
+    use JDZ\AdminUi\Controller\Traits\MediasControllerTrait;
 
     protected function mediaConfig(): MediaConfig { /* where the library lives */ }
     protected function mediaTranslate(string $key, array $params = []): string { … }
@@ -181,8 +193,12 @@ final class MediasController extends AdminController
 }
 ```
 
-Routes (the paths `JiZy.makeUrl()` builds — override `mediaTaskUrl()` to move
-them): `json/mediamanager/{init,fs,upload}`,
+Routes (the paths `JiZy.makeUrl()` builds — they hang off `mediaBaseUrl()`,
+which defaults to `/admin`; override that one method to serve the back office
+somewhere else, or `mediaTaskUrl()` / `mediaDownloadUrl()` to reshape a single
+URL). A medias controller does not inherit `adminBaseUrl()`: it is standalone,
+so a site that moves its admin overrides both hooks.
+`json/mediamanager/{init,fs,upload}`,
 `json/mediamanager/folder/{create,rename,move,delete}`,
 `json/mediamanager/file/{infos,rename,move,delete,protect,unprotect}`,
 `json/medias/selector`, plus `medias` and `medias/download`. The `create`,
