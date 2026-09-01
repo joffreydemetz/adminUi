@@ -137,7 +137,7 @@ trait AdminControllerTrait
       'pagination' => $this->buildPagination($pages, $page),
     ];
 
-    return $this->adminRender($response, 'views/admin/items.tmpl', $vData, $component, 'list');
+    return $this->adminRender($response, $this->adminViewName('items'), $vData, $component, 'list');
   }
 
   public function add(ServerRequestInterface $request, ResponseInterface $response): ResponseInterface
@@ -241,6 +241,22 @@ trait AdminControllerTrait
   protected function adminBaseUrl(): string
   {
     return '/admin';
+  }
+
+  /**
+   * Where the shared admin screens live, as this site names them.
+   *
+   * The package renders `items` and `item`; it does not get to decide the
+   * folder or the extension they sit under. A site whose templates are
+   * `templates/admin/views/<name>.twig` overrides this once, in its own
+   * abstract admin controller. The default is the historical name, so a
+   * consumer that overrides nothing keeps rendering what it always did.
+   *
+   * @see MediasControllerTrait::mediaView() the same seam for the library
+   */
+  protected function adminViewName(string $name): string
+  {
+    return 'views/admin/' . $name . '.tmpl';
   }
 
   protected function buildColumns(array $state): Columns
@@ -442,7 +458,7 @@ trait AdminControllerTrait
       'adminFormView' => $view->toData(),
     ];
 
-    return $this->adminRender($response, 'views/admin/item.tmpl', $vData, $component, 'form');
+    return $this->adminRender($response, $this->adminViewName('item'), $vData, $component, 'form');
   }
 
   protected function buildItemToolbar(?int $id): AdminToolbar

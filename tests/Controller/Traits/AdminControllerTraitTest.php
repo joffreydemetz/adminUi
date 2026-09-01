@@ -221,6 +221,20 @@ class AdminControllerTraitTest extends TestCase
     );
   }
 
+  public function testTheViewNamesAreOverridable(): void
+  {
+    $retemplated = new RetemplatedAdminController($this->service);
+
+    $retemplated->list($this->get(), new Response());
+    $this->assertSame('views/items.twig', $retemplated->lastView);
+
+    $retemplated->add($this->get(), new Response());
+    $this->assertSame('views/item.twig', $retemplated->lastView);
+
+    $retemplated->edit($this->get(['id' => '2']), new Response());
+    $this->assertSame('views/item.twig', $retemplated->lastView);
+  }
+
   // ----------------------------------------------------------- selection --
 
   public function testPublishTakesTheCsvSelection(): void
@@ -588,5 +602,17 @@ final class RelocatedAdminController extends TestAdminController
   protected function adminBaseUrl(): string
   {
     return '/bureau';
+  }
+}
+
+/**
+ * A site that names its admin screens its own way: one override, and both the
+ * list and the form follow. This is what a `templates/admin/` site does.
+ */
+final class RetemplatedAdminController extends TestAdminController
+{
+  protected function adminViewName(string $name): string
+  {
+    return 'views/' . $name . '.twig';
   }
 }

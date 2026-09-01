@@ -31,6 +31,30 @@ the screens where six back offices would otherwise grow six copies of the same
 file. It is opt-in: nothing else in the package touches HTTP, and the extra
 dependencies are `suggest`ed rather than required.
 
+## Upgrading to 2.1.0
+
+Nothing breaks; one seam is added. The shared screens are now named through
+`adminViewName()` (entity admin) and `mediaView()` (library) instead of literal
+strings, and both still default to what 2.0.0 rendered:
+
+```php
+protected function adminViewName(string $name): string   // 'items', 'item'
+{
+  return 'views/admin/' . $name . '.tmpl';
+}
+
+protected function mediaView(string $name): string       // 'display', 'selector', …
+{
+  return 'views/admin/medias/' . $name . '.tmpl';
+}
+```
+
+A site whose templates live under `templates/admin/` overrides one line each.
+The medias controller carries its own copy because it is standalone — it does
+not use `AdminControllerTrait`.
+
+The defaults become `views/<name>.twig` in 3.0.0.
+
 ## Upgrading to 2.0.0
 
 Two breaking changes, both one-line fixes:
@@ -142,7 +166,8 @@ cannot instantiate an interface.
 
 Everything else has a default worth keeping: `buildColumns()` paints the usual
 checkbox / label / published / ordering / id / triggers set,
-`adminBaseUrl()` is `/admin`, `hasSearch()` is off, `filterOptions()` is empty,
+`adminBaseUrl()` is `/admin`, `adminViewName()` points at
+`views/admin/<name>.tmpl`, `hasSearch()` is off, `filterOptions()` is empty,
 `orderingSort()` is `'ordering ASC'` (an admin listing newest first returns
 `'ordering DESC'` and drag-reorder follows), and `adminText()` holds the French
 wording of every flash, tooltip and confirm — override the keys a site wants to
@@ -197,7 +222,8 @@ Routes (the paths `JiZy.makeUrl()` builds — they hang off `mediaBaseUrl()`,
 which defaults to `/admin`; override that one method to serve the back office
 somewhere else, or `mediaTaskUrl()` / `mediaDownloadUrl()` to reshape a single
 URL). A medias controller does not inherit `adminBaseUrl()`: it is standalone,
-so a site that moves its admin overrides both hooks.
+so a site that moves its admin overrides both hooks — and likewise
+`mediaView()` alongside `adminViewName()` when it renames its templates.
 `json/mediamanager/{init,fs,upload}`,
 `json/mediamanager/folder/{create,rename,move,delete}`,
 `json/mediamanager/file/{infos,rename,move,delete,protect,unprotect}`,

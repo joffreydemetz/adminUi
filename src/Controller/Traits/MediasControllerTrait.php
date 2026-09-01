@@ -130,6 +130,15 @@ trait MediasControllerTrait
     return '../media/';
   }
 
+  /**
+   * Where the library screens live, as this site names them.
+   *
+   * The media controller is standalone — it does not use
+   * {@see AdminControllerTrait} — so it carries its own copy of that trait's
+   * `adminViewName()` seam. A site whose templates are
+   * `templates/admin/views/medias/<name>.twig` overrides this one too. The
+   * default is the historical name.
+   */
   protected function mediaView(string $name): string
   {
     return 'views/admin/medias/' . $name . '.tmpl';

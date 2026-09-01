@@ -230,6 +230,22 @@ class MediasControllerTraitTest extends TestCase
     $this->assertSame('/bureau/json/mediamanager/upload', $data['dz']['url']);
   }
 
+  public function testTheMediaViewNamesAreOverridable(): void
+  {
+    $retemplated = new RetemplatedMediasController($this->root);
+
+    $retemplated->selector($this->get(), new Response());
+
+    $this->assertSame(['views/medias/selector.twig'], $retemplated->views);
+  }
+
+  public function testTheMediaViewNamesDefaultToTheHistoricalOnes(): void
+  {
+    $this->controller->selector($this->get(), new Response());
+
+    $this->assertSame(['views/admin/medias/selector.tmpl'], $this->controller->views);
+  }
+
   // -------------------------------------------------------------- upload --
 
   public function testUploadStoresTheFileAndAnswersWithItsPath(): void
@@ -455,6 +471,9 @@ class TestMediasController
 
   private array $state = [];
 
+  /** Every view name the trait asked for, in order. */
+  public array $views = [];
+
   public function __construct(private string $root) {}
 
   protected function mediaConfig(): MediaConfig
@@ -478,7 +497,9 @@ class TestMediasController
   /** Renders just enough of each view to assert the contract on. */
   protected function mediaRenderFragment(string $view, array $vData): string
   {
-    if (\str_ends_with($view, 'selector.tmpl')) {
+    $this->views[] = $view;
+
+    if (\str_contains($view, 'selector')) {
       $html = '<div data-mode="' . $vData['mode'] . '">';
 
       foreach ($vData['folders'] as $one) {
@@ -503,7 +524,7 @@ class TestMediasController
       return $html . '</div>';
     }
 
-    if (\str_ends_with($view, 'finfos.tmpl')) {
+    if (\str_contains($view, 'finfos')) {
       return \implode('', $vData['file']['infos']);
     }
 
@@ -555,5 +576,18 @@ final class RelocatedMediasController extends TestMediasController
   protected function mediaBaseUrl(): string
   {
     return '/bureau';
+  }
+}
+
+/**
+ * A site that names its library screens its own way. Same seam as
+ * {@see \JDZ\AdminUi\Controller\Traits\AdminControllerTrait::adminViewName()},
+ * owned here because a medias controller stands alone.
+ */
+final class RetemplatedMediasController extends TestMediasController
+{
+  protected function mediaView(string $name): string
+  {
+    return 'views/medias/' . $name . '.twig';
   }
 }
