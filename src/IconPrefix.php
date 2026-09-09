@@ -13,9 +13,9 @@ namespace JDZ\AdminUi;
  * The CSS classes toolbar buttons and row triggers paint their icon with.
  *
  * The package used to hardcode `glyphicons glyphicons-<name>`, which stopped
- * being true once an admin stopped shipping Glyphicons: the saturn sites run a
- * generated `admin-font` subset whose classes are `icon icon-<name>`. The
- * default here is the legacy pair on purpose — the legacy framework portails
+ * being true once an admin stopped shipping Glyphicons: a consumer that ships a
+ * generated icon-font subset paints `icon icon-<name>` instead. The
+ * default here is the legacy pair on purpose — legacy framework admins
  * still paint that vocabulary, and they must not change because a consumer
  * elsewhere did.
  *

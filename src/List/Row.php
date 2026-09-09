@@ -75,7 +75,7 @@ class Row extends jData implements RowInterface
    * This includes column values, row state, actions, and triggers.
    * 
    * This method fixes the triggers regression where per-row edit/trash/reorder
-   * anchors were not being emitted in 5.0 (legacy christannaProd handled this).
+   * anchors were not being emitted in 5.0.
    * 
    * @param Columns $columns The columns collection to extract values for
    * @return array The row data with all required fields for list rendering

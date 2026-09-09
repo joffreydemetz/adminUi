@@ -378,7 +378,7 @@ trait AdminControllerTrait
     return $this->hasSearch() || [] !== $this->filterOptions();
   }
 
-  /** The sort drag-reorder needs — patricia lists newest first, so DESC there. */
+  /** The sort drag-reorder needs — a consumer that lists newest first returns DESC. */
   protected function orderingSort(): string
   {
     return 'ordering ASC';

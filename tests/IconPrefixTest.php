@@ -25,7 +25,7 @@ class IconPrefixTest extends TestCase
   }
 
   /**
-   * The default has to stay the legacy pair: the framework portails paint that
+   * The default has to stay the legacy pair: legacy framework admins paint that
    * vocabulary and must not change because another consumer moved on.
    */
   public function testDefaultIsTheLegacyGlyphiconsPair(): void
