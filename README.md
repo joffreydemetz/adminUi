@@ -4,7 +4,27 @@ Framework-agnostic admin UI rendering primitives.
 
 Value objects that serialize (via `toData()`) to the JSON consumed by the JS
 admin bundle — no HTTP, no database, no app lifecycle. Built on
-[`jdz/htmlrenderer`](https://jdz.joffreydemetz.com/htmlrenderer).
+[`jdz/htmlrenderer`](https://jdz.joffreydemetz.com/htmlrenderer) and
+[`jdz/ui`](https://jdz.joffreydemetz.com/ui).
+
+## Install
+
+```
+composer require jdz/adminui
+```
+
+## Requirements
+
+- PHP >= 8.2
+- [`jdz/htmlrenderer`](https://jdz.joffreydemetz.com/htmlrenderer) ^1.0
+- [`jdz/data`](https://jdz.joffreydemetz.com/data) ^2.0
+- [`jdz/form`](https://jdz.joffreydemetz.com/form) ^1.1
+- [`jdz/ui`](https://jdz.joffreydemetz.com/ui) ^1.0
+- `psr/http-message` ^1.1 || ^2.0
+
+Suggested, only for `MediasControllerTrait`: `jdz/mediamanager` (the media
+library engine it drives) and `symfony/http-foundation` (the uploaded-file type
+`jdz/mediamanager` speaks).
 
 ## Contents
 
@@ -13,11 +33,12 @@ admin bundle — no HTTP, no database, no app lifecycle. Built on
 | `JDZ\AdminUi\List` | `Columns`, `Column`, `Triggers`, `Trigger`, `ItemActions`, `Row`, `RowInterface` |
 | `JDZ\AdminUi\Toolbar` | `Toolbar`, `ToolbarButton`, `AdminToolbar` |
 | `JDZ\AdminUi\Item` | `Item`, `ItemSection`, `ItemField`, `ItemTable` — read-only detail views |
-| `JDZ\AdminUi\Form` | `FormView` (wraps a [`jdz/form`](https://jdz.joffreydemetz.com/form) form with fieldset panel states), `FormActions` |
+| `JDZ\AdminUi\Form` | `FormView` (wraps a [`jdz/form`](https://jdz.joffreydemetz.com/form) form with fieldset panel states), `FormActions`, `FiltersForm` (the list filterbar form, see below) |
 | `JDZ\AdminUi\ValueObject` | `ModalChrome`, `Filterbar` |
 | `JDZ\AdminUi\Contract` | `AdminServiceInterface`, `ListState`, `SaveResult` — what an entity admin asks of the app |
 | `JDZ\AdminUi\Controller\Traits` | `AdminControllerTrait` — the shared entity admin; `MediasControllerTrait` — the shared media manager (both opt-in, see below) |
-| `JDZ\AdminUi\Controller` | `PsrUploadedFileBridge` — the PSR-7 → HttpFoundation uploaded-file adapter the media manager needs |
+| `JDZ\AdminUi\Controller` | `PsrUploadedFileBridge` — the PSR-7 → HttpFoundation uploaded-file adapter the media manager needs; `AdminControllerTrait`, `MediasControllerTrait` — deprecated aliases of the `Traits\` ones (see Upgrading to 2.0.0) |
+| `JDZ\AdminUi\Html` | `Image` — the [`jdz/ui`](https://jdz.joffreydemetz.com/ui) image renderer (`extends \JDZ\Ui\Html\Image`), exposed under the AdminUi namespace for list thumbnails and previews |
 | `JDZ\AdminUi` | `IconPrefix` — which icon vocabulary the toolbars and triggers paint (see below) |
 
 ## Scope
@@ -61,7 +82,9 @@ Two breaking changes, both one-line fixes:
 
 - The two controller traits moved to `JDZ\AdminUi\Controller\Traits\` — update
   the `use` lines. The old names still resolve (as deprecated traits that
-  compose the new ones) so an upgrade need not be atomic; they go in 2.1.0.
+  compose the new ones) so an upgrade need not be atomic. They are still
+  shipped as of 2.2.0 but will be removed in a future release — do not rely
+  on them.
 - `adminBaseUrl()` and the new `mediaBaseUrl()` both default to `/admin`.
   A site served from another prefix must override them — the package no longer
   assumes one.
@@ -259,8 +282,21 @@ the browser declared, and the trait additionally checks the stored extension
 against the configured whitelist — an upload endpoint inside the web root gets
 both.
 
-## Install
+## Tests
 
 ```
-composer require jdz/adminui
+composer test
 ```
+
+## Changelog
+
+- **2.2.0** — Docblock wording only; no API change.
+- **2.1.0** — Template names come from the site: `adminViewName()` /
+  `mediaView()` hooks (see Upgrading to 2.1.0).
+- **2.0.0** — Controller traits move to `Controller\Traits\`; the admin path
+  is a hook, `adminBaseUrl()` / `mediaBaseUrl()` defaulting to `/admin` (see
+  Upgrading to 2.0.0).
+
+## License
+
+MIT — see [LICENSE](LICENSE).
