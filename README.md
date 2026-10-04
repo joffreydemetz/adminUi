@@ -82,9 +82,8 @@ Two breaking changes, both one-line fixes:
 
 - The two controller traits moved to `JDZ\AdminUi\Controller\Traits\` — update
   the `use` lines. The old names still resolve (as deprecated traits that
-  compose the new ones) so an upgrade need not be atomic. They are still
-  shipped as of 2.2.0 but will be removed in a future release — do not rely
-  on them.
+  compose the new ones) so an upgrade need not be atomic. They stay through
+  2.x and are removed in 3.0.0 — do not rely on them.
 - `adminBaseUrl()` and the new `mediaBaseUrl()` both default to `/admin`.
   A site served from another prefix must override them — the package no longer
   assumes one.
@@ -290,6 +289,7 @@ composer test
 
 ## Changelog
 
+- **2.2.1** — The deprecated `Controller\AdminControllerTrait` / `MediasControllerTrait` names are kept through 2.x, removed in 3.0.0 (their docblocks still said 2.1.0). No API change.
 - **2.2.0** — Docblock wording only; no API change.
 - **2.1.0** — Template names come from the site: `adminViewName()` /
   `mediaView()` hooks (see Upgrading to 2.1.0).

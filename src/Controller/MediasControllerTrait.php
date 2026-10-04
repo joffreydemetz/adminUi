@@ -14,9 +14,9 @@ namespace JDZ\AdminUi\Controller;
 /**
  * Back-compatible name for the trait that moved in 2.0.0.
  *
- * @deprecated 2.0.0 use {@see Traits\MediasControllerTrait}. Kept for one minor
+ * @deprecated 2.0.0 use {@see Traits\MediasControllerTrait}. Kept through 2.x
  *             so a consumer can move its `use` lines after the upgrade, not
- *             during it; removed in 2.1.0.
+ *             during it; removed in 3.0.0.
  */
 trait MediasControllerTrait
 {

@@ -15,9 +15,9 @@ use PHPUnit\Framework\TestCase;
 
 /**
  * 2.0.0 moved both controller traits into `Controller\Traits\`. The old names
- * survive one minor as deprecated traits composing the new ones, so an upgrade
- * does not have to be atomic — this is the proof they still compose, abstract
- * requirements included.
+ * survive through 2.x (removed in 3.0.0) as deprecated traits composing the new
+ * ones, so an upgrade does not have to be atomic — this is the proof they still
+ * compose, abstract requirements included.
  *
  * @covers \JDZ\AdminUi\Controller\AdminControllerTrait
  * @covers \JDZ\AdminUi\Controller\MediasControllerTrait
