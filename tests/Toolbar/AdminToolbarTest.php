@@ -10,11 +10,10 @@
 namespace JDZ\AdminUi\Tests\Toolbar;
 
 use JDZ\AdminUi\Toolbar\AdminToolbar;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \JDZ\AdminUi\Toolbar\AdminToolbar
- */
+#[CoversClass(AdminToolbar::class)]
 class AdminToolbarTest extends TestCase
 {
   public function testTitleAndSubtitle(): void

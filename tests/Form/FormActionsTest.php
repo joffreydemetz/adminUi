@@ -11,14 +11,14 @@ namespace JDZ\AdminUi\Tests\Form;
 
 use JDZ\AdminUi\Form\FormActions;
 use JDZ\AdminUi\Toolbar\AdminToolbar;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * Documents the current FormActions behavior (baked /admin/{component}/* hrefs —
  * consumers must rewrite them through their router before display).
- *
- * @covers \JDZ\AdminUi\Form\FormActions
  */
+#[CoversClass(FormActions::class)]
 class FormActionsTest extends TestCase
 {
     private function actions(): FormActions

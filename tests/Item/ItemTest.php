@@ -12,13 +12,12 @@ namespace JDZ\AdminUi\Tests\Item;
 use JDZ\AdminUi\Item\Item;
 use JDZ\AdminUi\Item\ItemSection;
 use JDZ\AdminUi\Item\ItemField;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \JDZ\AdminUi\Item\Item
- * @covers \JDZ\AdminUi\Item\ItemSection
- * @covers \JDZ\AdminUi\Item\ItemField
- */
+#[CoversClass(Item::class)]
+#[CoversClass(ItemSection::class)]
+#[CoversClass(ItemField::class)]
 class ItemTest extends TestCase
 {
     public function testItemCreation(): void

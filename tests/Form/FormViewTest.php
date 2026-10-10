@@ -11,11 +11,10 @@ namespace JDZ\AdminUi\Tests\Form;
 
 use JDZ\AdminUi\Form\FormView;
 use JDZ\Form\Contract\FormInterface;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \JDZ\AdminUi\Form\FormView
- */
+#[CoversClass(FormView::class)]
 class FormViewTest extends TestCase
 {
     private function stubForm(array $fieldsets): FormInterface

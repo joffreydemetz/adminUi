@@ -10,11 +10,10 @@
 namespace JDZ\AdminUi\Tests\ValueObject;
 
 use JDZ\AdminUi\ValueObject\ModalChrome;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \JDZ\AdminUi\ValueObject\ModalChrome
- */
+#[CoversClass(ModalChrome::class)]
 class ModalChromeTest extends TestCase
 {
     public function testDefaults(): void

@@ -17,6 +17,8 @@ use JDZ\Form\Field\Hidden as HiddenField;
 use JDZ\Form\Field\Text;
 use JDZ\Form\Form;
 use JDZ\AdminUi\List\Row;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\CoversTrait;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -25,11 +27,10 @@ use Slim\Psr7\Response;
 
 /**
  * The trait driven the way jizy.admin.js drives it, over an in-memory service.
- *
- * @covers \JDZ\AdminUi\Controller\Traits\AdminControllerTrait
- * @covers \JDZ\AdminUi\Contract\ListState
- * @covers \JDZ\AdminUi\Contract\SaveResult
  */
+#[CoversTrait(AdminControllerTrait::class)]
+#[CoversClass(ListState::class)]
+#[CoversClass(SaveResult::class)]
 class AdminControllerTraitTest extends TestCase
 {
   private FakeAdminService $service;

@@ -11,6 +11,9 @@ namespace JDZ\AdminUi\Tests\Controller\Traits;
 
 use JDZ\AdminUi\Controller\Traits\MediasControllerTrait;
 use JDZ\MediaManager\ValueObject\MediaConfig;
+use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\CoversTrait;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -21,10 +24,9 @@ use Slim\Psr7\UploadedFile;
 /**
  * The trait against a real (temporary) media library, driven the way
  * mediamanager.js drives it.
- *
- * @covers \JDZ\AdminUi\Controller\Traits\MediasControllerTrait
- * @covers \JDZ\AdminUi\Controller\PsrUploadedFileBridge
  */
+#[CoversTrait(MediasControllerTrait::class)]
+#[CoversClass(\JDZ\AdminUi\Controller\PsrUploadedFileBridge::class)]
 class MediasControllerTraitTest extends TestCase
 {
   private string $root = '';
@@ -187,9 +189,7 @@ class MediasControllerTraitTest extends TestCase
 
   // ----------------------------------------------------------- traversal --
 
-  /**
-   * @dataProvider hostilePaths
-   */
+  #[DataProvider('hostilePaths')]
   public function testAHostilePathNeverLeavesTheLibrary(string $folder): void
   {
     $data = $this->json($this->controller->loadFs($this->get(['folder' => $folder]), new Response()));

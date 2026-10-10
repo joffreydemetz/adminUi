@@ -12,14 +12,14 @@ namespace JDZ\AdminUi\Tests\Form;
 use JDZ\AdminUi\Form\FiltersForm;
 use JDZ\AdminUi\ValueObject\Filterbar;
 use JDZ\Form\FormData;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
 /**
  * The filterbar form, checked on the names and fieldsets jizy.admin.js and
  * Filterbar::fromFormData() bind to.
- *
- * @covers \JDZ\AdminUi\Form\FiltersForm
  */
+#[CoversClass(FiltersForm::class)]
 class FiltersFormTest extends TestCase
 {
   private const STATE = ['search' => '', 'orderBy' => 'ordering ASC', 'limit' => 25];

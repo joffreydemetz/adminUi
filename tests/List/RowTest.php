@@ -12,11 +12,10 @@ namespace JDZ\AdminUi\Tests\List;
 use JDZ\AdminUi\List\Row;
 use JDZ\AdminUi\List\Columns;
 use JDZ\AdminUi\List\Column;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \JDZ\AdminUi\List\Row
- */
+#[CoversClass(Row::class)]
 class RowTest extends TestCase
 {
     public function testRowCreation(): void

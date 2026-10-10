@@ -11,6 +11,7 @@ namespace JDZ\AdminUi\Tests\Controller;
 
 use JDZ\AdminUi\Controller\AdminControllerTrait;
 use JDZ\AdminUi\Controller\MediasControllerTrait;
+use PHPUnit\Framework\Attributes\CoversTrait;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -18,10 +19,9 @@ use PHPUnit\Framework\TestCase;
  * survive through 2.x (removed in 3.0.0) as deprecated traits composing the new
  * ones, so an upgrade does not have to be atomic — this is the proof they still
  * compose, abstract requirements included.
- *
- * @covers \JDZ\AdminUi\Controller\AdminControllerTrait
- * @covers \JDZ\AdminUi\Controller\MediasControllerTrait
  */
+#[CoversTrait(AdminControllerTrait::class)]
+#[CoversTrait(MediasControllerTrait::class)]
 class DeprecatedTraitAliasesTest extends TestCase
 {
   public function testTheOldTraitNamesStillResolve(): void

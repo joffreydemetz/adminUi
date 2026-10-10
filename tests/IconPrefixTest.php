@@ -12,11 +12,10 @@ namespace JDZ\AdminUi\Tests;
 use JDZ\AdminUi\IconPrefix;
 use JDZ\AdminUi\List\Triggers;
 use JDZ\AdminUi\Toolbar\AdminToolbar;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \JDZ\AdminUi\IconPrefix
- */
+#[CoversClass(IconPrefix::class)]
 class IconPrefixTest extends TestCase
 {
   protected function tearDown(): void

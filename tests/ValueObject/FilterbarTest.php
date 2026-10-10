@@ -10,11 +10,10 @@
 namespace JDZ\AdminUi\Tests\ValueObject;
 
 use JDZ\AdminUi\ValueObject\Filterbar;
+use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\TestCase;
 
-/**
- * @covers \JDZ\AdminUi\ValueObject\Filterbar
- */
+#[CoversClass(Filterbar::class)]
 class FilterbarTest extends TestCase
 {
     private function formToData(): array
