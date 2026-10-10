@@ -29,14 +29,6 @@ class FormViewTest extends TestCase
         return $form;
     }
 
-    public function testNameAndRenderer(): void
-    {
-        $view = new FormView('formations');
-
-        $this->assertEquals('formations', $view->getName());
-        $this->assertEquals('form.view', $view->getRenderer());
-    }
-
     public function testToDataContract(): void
     {
         $view = (new FormView('formations'))->setForm($this->stubForm([

@@ -12,6 +12,7 @@ namespace JDZ\AdminUi\Tests\Form;
 use JDZ\AdminUi\Form\FormActions;
 use JDZ\AdminUi\Toolbar\AdminToolbar;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -69,5 +70,51 @@ class FormActionsTest extends TestCase
         $this->assertEquals(['save', 'apply'], array_keys($buttons));
         $this->assertEquals('/admin/pages/save', $buttons['save']->toData()['attrs']['href']);
         $this->assertEquals('/admin/pages/apply', $buttons['apply']->toData()['attrs']['href']);
+    }
+
+    #[DataProvider('cancelContexts')]
+    public function testTheCancelActionAdaptsToTheContext(bool $isUpdate, string $type, string $task, string $tip): void
+    {
+        $button = $this->actions()->createCancelAction('pages', $isUpdate, 'Annuler', 'Fermer');
+
+        $data = $button->toData();
+
+        $this->assertSame($type, $data['type']);
+        $this->assertSame($task, $data['attrs']['data-task']);
+        $this->assertSame($tip, $data['attrs']['title']);
+        $this->assertSame('/admin/pages/cancel', $data['attrs']['href']);
+        $this->assertSame('btn btn-lg', $data['attrs']['class']);
+        $this->assertSame('<span class="glyphicons glyphicons-remove-circle"></span> ', $data['text']);
+    }
+
+    public static function cancelContexts(): array
+    {
+        return [
+            'editing an item' => ['isUpdate' => true, 'type' => 'cancel', 'task' => 'cancel', 'tip' => 'Annuler'],
+            'creating an item' => ['isUpdate' => false, 'type' => 'close', 'task' => 'close', 'tip' => 'Fermer'],
+        ];
+    }
+
+    public function testSaveAndApplyTakeTheirTipAndIcon(): void
+    {
+        $actions = $this->actions();
+
+        $save = $actions->createSaveAction('pages', 'Enregistrer et fermer', 'floppy')->toData();
+        $apply = $actions->createApplyAction('pages', 'Enregistrer', 'disk')->toData();
+
+        $this->assertSame(['Enregistrer et fermer', '<span class="glyphicons glyphicons-floppy"></span> '], [$save['attrs']['title'], $save['text']]);
+        $this->assertSame(['Enregistrer', '<span class="glyphicons glyphicons-disk"></span> '], [$apply['attrs']['title'], $apply['text']]);
+        $this->assertSame('/admin/pages/apply', $apply['attrs']['href']);
+    }
+
+    public function testTheActionsLandOnTheWrappedToolbarInOrder(): void
+    {
+        $toolbar = new AdminToolbar('toolbar');
+        (new FormActions($toolbar))->createStandardActions('pages', true);
+
+        $this->assertSame(
+            ['save', 'apply', 'beforeCancel', 'cancel'],
+            \array_column($toolbar->toData()['buttons'], 'name'),
+        );
     }
 }

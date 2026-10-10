@@ -18,38 +18,6 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(Row::class)]
 class RowTest extends TestCase
 {
-    public function testRowCreation(): void
-    {
-        $row = new Row(['id' => 1, 'name' => 'Test']);
-        
-        $this->assertEquals(1, $row->get('id'));
-        $this->assertEquals('Test', $row->get('name'));
-    }
-
-    public function testRowButtonsAndTriggers(): void
-    {
-        $row = new Row();
-        
-        $buttons = $row->getButtons();
-        $triggers = $row->getTriggers();
-        
-        $this->assertInstanceOf(\JDZ\AdminUi\List\ItemActions::class, $buttons);
-        $this->assertInstanceOf(\JDZ\AdminUi\List\Triggers::class, $triggers);
-    }
-
-    public function testRowDisable(): void
-    {
-        $row = new Row();
-        
-        $this->assertFalse($row->isDisabled());
-        $this->assertEquals('', $row->getDisabledMessage());
-        
-        $row->disable('Test message');
-        
-        $this->assertTrue($row->isDisabled());
-        $this->assertEquals('Test message', $row->getDisabledMessage());
-    }
-
     public function testRowToRowDataBasic(): void
     {
         $columns = new Columns('test');
@@ -79,31 +47,6 @@ class RowTest extends TestCase
         
         $this->assertTrue($data['rowIsDisabled'] ?? false);
         $this->assertEquals('Item is disabled', $data['disabledMessage'] ?? '');
-    }
-
-    public function testRowToRowDataWithActionsAndTriggers(): void
-    {
-        $columns = new Columns('test');
-        $columns->createColumn('id', 'number', 'ID');
-        
-        $row = new Row(['id' => 1]);
-        
-        // Add some actions
-        $buttons = $row->getButtons();
-        $buttons->getItemAction('edit', '/edit/1', 'primary', 'pencil');
-        
-        // Add some triggers  
-        $triggers = $row->getTriggers();
-        $triggers->getItemTrigger('delete', 'delete', 'trash');
-        
-        $data = $row->toRowData($columns);
-        
-        // Should have actions and triggers
-        $this->assertArrayHasKey('actions', $data);
-        $this->assertArrayHasKey('triggers', $data);
-        
-        // Check that triggers are properly structured
-        $this->assertArrayHasKey('triggers', $data['triggers']);
     }
 
     public function testRowToRowDataEmptyColumnValues(): void
@@ -155,5 +98,55 @@ class RowTest extends TestCase
         // Test magic isset
         $this->assertTrue(isset($row->id));
         $this->assertFalse(isset($row->nonexistent));
+    }
+
+    public function testToRowDataEmitsTheColumnValuesActionsAndTriggersOnly(): void
+    {
+        $columns = new Columns('things');
+        $columns->createColumn('id', 'id', '#');
+        $columns->createColumn('label', 'label', 'Titre');
+
+        $row = new Row(['id' => 3, 'label' => 'Trois', 'secret' => 'not a column']);
+        $row->getButtons()->getItemAction('edit', '/admin/things/edit/?id=3', 'primary');
+        $row->getTriggers()->getItemTrigger('publish', 'unpublish');
+
+        $this->assertSame([
+            'id' => 3,
+            'label' => 'Trois',
+            'actions' => [
+                [
+                    'renderer' => 'button',
+                    'attrs' => ['class' => 'btn btn-primary', 'href' => '/admin/things/edit/?id=3'],
+                    'position' => 1,
+                    'name' => 'edit',
+                    'tag' => 'a',
+                    'text' => '',
+                ],
+            ],
+            'triggers' => [
+                'renderer' => 'children',
+                'attrs' => [],
+                'triggers' => [
+                    [
+                        'renderer' => 'button',
+                        'attrs' => ['class' => 'unpublish', 'href' => '#'],
+                        'position' => 1,
+                        'name' => 'publish',
+                        'tag' => 'a',
+                        'text' => '',
+                    ],
+                ],
+            ],
+        ], $row->toRowData($columns));
+    }
+
+    public function testADisabledRowWithoutMessageStillSaysSo(): void
+    {
+        $row = (new Row(['id' => 1]))->disable();
+
+        $data = $row->toRowData(new Columns('things'));
+
+        $this->assertTrue($data['rowIsDisabled']);
+        $this->assertSame('', $data['disabledMessage']);
     }
 }

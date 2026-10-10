@@ -11,6 +11,7 @@ namespace JDZ\AdminUi\Tests\ValueObject;
 
 use JDZ\AdminUi\ValueObject\Filterbar;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(Filterbar::class)]
@@ -76,16 +77,6 @@ class FilterbarTest extends TestCase
         $this->assertEquals($arr, $roundtripped);
     }
 
-    public function testWithersAreImmutable(): void
-    {
-        $bar = new Filterbar(['a' => 1]);
-        $new = $bar->withAttrs(['b' => 2]);
-
-        $this->assertNotSame($bar, $new);
-        $this->assertEquals(['a' => 1], $bar->attrs);
-        $this->assertEquals(['b' => 2], $new->attrs);
-    }
-
     public function testWithAddedFilterAppends(): void
     {
         $bar = (new Filterbar())
@@ -93,5 +84,31 @@ class FilterbarTest extends TestCase
             ->withAddedFilter(['name' => 'category']);
 
         $this->assertEquals([['name' => 'published'], ['name' => 'category']], $bar->filters);
+    }
+
+    #[DataProvider('withers')]
+    public function testEveryWitherChangesOnlyItsOwnKeyOnACopy(string $wither, string $key, ?array $value): void
+    {
+        $bar = Filterbar::fromFormData($this->formToData());
+        $before = $bar->toArray();
+
+        $changed = $bar->{$wither}($value);
+
+        $expected = $before;
+        $expected[$key] = $value;
+        $this->assertSame($expected, $changed->toArray());
+        $this->assertSame($before, $bar->toArray());
+    }
+
+    public static function withers(): array
+    {
+        return [
+            'attrs' => ['wither' => 'withAttrs', 'key' => 'attrs', 'value' => ['id' => 'f']],
+            'hidden' => ['wither' => 'withHidden', 'key' => 'hidden', 'value' => []],
+            'searchbox off' => ['wither' => 'withSearchbox', 'key' => 'searchbox', 'value' => null],
+            'limit' => ['wither' => 'withLimit', 'key' => 'limit', 'value' => ['name' => 'limit', 'value' => 50]],
+            'orderby off' => ['wither' => 'withOrderBy', 'key' => 'orderby', 'value' => null],
+            'filters' => ['wither' => 'withFilters', 'key' => 'filters', 'value' => [['name' => 'idCat']]],
+        ];
     }
 }

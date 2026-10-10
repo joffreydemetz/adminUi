@@ -13,6 +13,7 @@ use JDZ\AdminUi\Item\Item;
 use JDZ\AdminUi\Item\ItemSection;
 use JDZ\AdminUi\Item\ItemField;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 #[CoversClass(Item::class)]
@@ -20,160 +21,143 @@ use PHPUnit\Framework\TestCase;
 #[CoversClass(ItemField::class)]
 class ItemTest extends TestCase
 {
-    public function testItemCreation(): void
+
+    public function testToDataNestsSectionsAndFieldsInTheOrderTheyWereAdded(): void
     {
-        $item = new Item('test-item');
-        
-        $this->assertEquals('test-item', $item->getName());
-        $this->assertEquals('item', $item->getRenderer());
+        $item = new Item('preview');
+        $general = $item->addSection('general', 'Général');
+        $general->addField('email', ItemField::TYPE_EMAIL, 'Email', 'a@b.c');
+        $general->addField('id', ItemField::TYPE_ID, 'ID', 12);
+        $item->addSection('extra');
+
+        $this->assertSame([
+            'renderer' => 'item',
+            'attrs' => [],
+            'sections' => [
+                [
+                    'renderer' => 'item.section',
+                    'attrs' => [],
+                    'position' => 1,
+                    'title' => 'Général',
+                    'fields' => [
+                        [
+                            'renderer' => 'item.field',
+                            'attrs' => ['class' => 'email'],
+                            'position' => 1,
+                            'name' => 'email',
+                            'type' => 'email',
+                            'label' => 'Email',
+                            'value' => 'a@b.c',
+                        ],
+                        [
+                            'renderer' => 'item.field',
+                            'attrs' => ['class' => 'id'],
+                            'position' => 2,
+                            'name' => 'id',
+                            'type' => 'id',
+                            'label' => 'ID',
+                            'value' => 12,
+                        ],
+                    ],
+                ],
+                [
+                    'renderer' => 'item.section',
+                    'attrs' => [],
+                    'position' => 2,
+                    'title' => '',
+                    'fields' => [],
+                ],
+            ],
+        ], $item->toData());
     }
 
-    public function testItemAddSection(): void
+    public function testAFieldCarriesItsTypeAndNameAsClasses(): void
     {
-        $item = new Item('test-item');
-        $section = $item->addSection('general', 'General Information');
-        
-        $this->assertInstanceOf(ItemSection::class, $section);
+        $field = new ItemField('phone', ItemField::TYPE_PHONE, 'Téléphone', '01 02');
+
+        $this->assertSame('phone', $field->toData()['attrs']['class']);
+
+        $field = new ItemField('mobile', ItemField::TYPE_PHONE, 'Mobile');
+
+        $this->assertSame('phone mobile', $field->toData()['attrs']['class']);
+    }
+
+    public function testHasSectionAndHasFieldKnowOnlyWhatWasAdded(): void
+    {
+        $item = new Item('preview');
+        $item->addSection('general')->addField('email', ItemField::TYPE_EMAIL, 'Email');
+
         $this->assertTrue($item->hasSection('general'));
-        $this->assertSame($section, $item->getSection('general'));
+        $this->assertFalse($item->hasSection('billing'));
+        $this->assertTrue($item->getSection('general')->hasField('email'));
+        $this->assertFalse($item->getSection('general')->hasField('phone'));
     }
 
-    public function testItemToDataWithSections(): void
+    public function testAnUnknownSectionThrows(): void
     {
-        $item = new Item('test-item');
-        $section = $item->addSection('general', 'General Information');
-        $section->addField('name', 'text', 'Name', 'John Doe');
-        
-        $data = $item->toData();
-        
-        $this->assertEquals('item', $data['renderer']);
-        $this->assertArrayHasKey('sections', $data);
-        $this->assertCount(1, $data['sections']);
-        $this->assertEquals('General Information', $data['sections'][0]['title']);
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Element billing not found');
+
+        (new Item('preview'))->getSection('billing');
     }
 
-    public function testItemSectionCreation(): void
+    public function testAnUnknownFieldThrows(): void
     {
-        $section = new ItemSection('general', 'General Information');
-        
-        $this->assertEquals('general', $section->getName());
-        $this->assertEquals('General Information', $section->getTitle());
-        $this->assertEquals('item.section', $section->getRenderer());
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Element phone not found');
+
+        (new ItemSection('general'))->getField('phone');
     }
 
-    public function testItemSectionSetTitle(): void
+    public function testASectionNameCanOnlyBeAddedOnce(): void
+    {
+        $item = new Item('preview');
+        $item->addSection('general');
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Element general already exists');
+
+        $item->addSection('general');
+    }
+
+    public function testAFieldNameCanOnlyBeAddedOnce(): void
     {
         $section = new ItemSection('general');
-        $section->setTitle('Updated Title');
-        
-        $this->assertEquals('Updated Title', $section->getTitle());
+        $section->addField('email', ItemField::TYPE_EMAIL, 'Email');
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Element email already exists');
+
+        $section->addField('email', ItemField::TYPE_TEXT, 'Courriel');
     }
 
-    public function testItemSectionAddField(): void
+    #[DataProvider('emptyValues')]
+    public function testEmptyHiddenFlagsOnlyAnEmptyValue(mixed $value, string $type, bool $hidden): void
     {
-        $section = new ItemSection('general', 'General Information');
-        $field = $section->addField('name', 'text', 'Name', 'John Doe');
-        
-        $this->assertInstanceOf(ItemField::class, $field);
-        $this->assertTrue($section->hasField('name'));
-        $this->assertSame($field, $section->getField('name'));
+        $field = (new ItemField('f', $type, 'F', $value))->withEmptyHidden();
+
+        $this->assertSame($hidden, $field->toData()['hidden']);
     }
 
-    public function testItemFieldCreation(): void
+    public static function emptyValues(): array
     {
-        $field = new ItemField('name', 'text', 'Name', 'John Doe');
-        
-        $this->assertEquals('name', $field->getName());
-        $this->assertEquals('text', $field->getType());
-        $this->assertEquals('Name', $field->getLabel());
-        $this->assertEquals('John Doe', $field->getValue());
-        $this->assertEquals('item.field', $field->getRenderer());
+        return [
+            'null' => ['value' => null, 'type' => ItemField::TYPE_TEXT, 'hidden' => true],
+            'empty string' => ['value' => '', 'type' => ItemField::TYPE_TEXT, 'hidden' => true],
+            'blank string' => ['value' => " \t\n", 'type' => ItemField::TYPE_TEXT, 'hidden' => true],
+            'empty list' => ['value' => [], 'type' => ItemField::TYPE_LIST, 'hidden' => true],
+            'text' => ['value' => 'x', 'type' => ItemField::TYPE_TEXT, 'hidden' => false],
+            'zero string' => ['value' => '0', 'type' => ItemField::TYPE_TEXT, 'hidden' => false],
+            'zero int' => ['value' => 0, 'type' => ItemField::TYPE_NUMBER, 'hidden' => false],
+            'non-empty list' => ['value' => ['a'], 'type' => ItemField::TYPE_LIST, 'hidden' => false],
+            'bool false' => ['value' => false, 'type' => ItemField::TYPE_BOOL, 'hidden' => false],
+            'bool true' => ['value' => true, 'type' => ItemField::TYPE_BOOL, 'hidden' => false],
+        ];
     }
 
-    public function testItemFieldTypes(): void
+    public function testWithoutEmptyHiddenAnEmptyFieldIsNotFlagged(): void
     {
-        $field = new ItemField('test', ItemField::TYPE_TEXT, 'Test', 'value');
-        $this->assertEquals(ItemField::TYPE_TEXT, $field->getType());
-        
-        $boolField = new ItemField('active', ItemField::TYPE_BOOL, 'Active', true);
-        $this->assertEquals(ItemField::TYPE_BOOL, $boolField->getType());
-    }
-
-    public function testItemFieldSetters(): void
-    {
-        $field = new ItemField('name', 'text', 'Name');
-        
-        $field->setValue('Jane Doe');
-        $this->assertEquals('Jane Doe', $field->getValue());
-        
-        $field->setLabel('Full Name');
-        $this->assertEquals('Full Name', $field->getLabel());
-        
-        $field->setType('string');
-        $this->assertEquals('string', $field->getType());
-    }
-
-    public function testItemFieldWithEmptyHidden(): void
-    {
-        $field = new ItemField('name', 'text', 'Name', '');
-        $field->withEmptyHidden(true);
-        
-        $this->assertTrue($field->isEmptyHidden());
-    }
-
-    public function testItemFieldToData(): void
-    {
-        $field = new ItemField('email', 'text', 'Email', 'test@example.com');
-        
-        $data = $field->toData();
-        
-        $this->assertEquals('item.field', $data['renderer']);
-        $this->assertEquals('email', $data['name']);
-        $this->assertEquals('text', $data['type']);
-        $this->assertEquals('Email', $data['label']);
-        $this->assertEquals('test@example.com', $data['value']);
-    }
-
-    public function testItemFieldToDataWithEmptyValue(): void
-    {
-        $field = new ItemField('name', 'text', 'Name', '');
-        $field->withEmptyHidden(true);
-        
-        $data = $field->toData();
-        
-        $this->assertTrue($data['hidden'] ?? false);
-    }
-
-    public function testItemFieldToDataBoolNeverHidden(): void
-    {
-        $field = new ItemField('active', 'bool', 'Active', false);
-        $field->withEmptyHidden(true);
-        
-        $data = $field->toData();
-        
-        // Boolean fields should never be hidden even with emptyHidden=true
-        $this->assertFalse($data['hidden'] ?? true);
-    }
-
-    public function testComplexItemStructure(): void
-    {
-        $item = new Item('user-preview');
-        
-        // Add General Information section
-        $general = $item->addSection('general', 'General Information');
-        $general->addField('id', 'id', 'ID', 123);
-        $general->addField('name', 'text', 'Name', 'John Doe');
-        $general->addField('email', 'email', 'Email', 'john@example.com');
-        
-        // Add Additional Information section
-        $additional = $item->addSection('additional', 'Additional Information');
-        $additional->addField('created', 'date', 'Created', '2023-01-01');
-        $additional->addField('active', 'bool', 'Active', true);
-        
-        $data = $item->toData();
-        
-        $this->assertCount(2, $data['sections']);
-        $this->assertEquals('General Information', $data['sections'][0]['title']);
-        $this->assertEquals('Additional Information', $data['sections'][1]['title']);
+        $this->assertArrayNotHasKey('hidden', (new ItemField('f', ItemField::TYPE_TEXT, 'F', ''))->toData());
+        $this->assertArrayNotHasKey('hidden', (new ItemField('f', ItemField::TYPE_TEXT, 'F', ''))->withEmptyHidden(false)->toData());
     }
 }

@@ -111,9 +111,16 @@ class AdminControllerTraitTest extends TestCase
   {
     $this->controller->state = ['search' => '', 'orderBy' => 'ordering ASC', 'limit' => 2];
 
-    $this->controller->list($this->get(), new Response());
+    $this->controller->list($this->get(['page' => '2']), new Response());
 
-    $this->assertIsArray($this->controller->lastVData['pagination']);
+    $pagination = $this->controller->lastVData['pagination'];
+    $this->assertSame('pager round', $pagination['attrs']['class']);
+    // The French tooltip, and the page links back onto the list task.
+    $this->assertSame('Page précédente', $pagination['pages'][0]['attrs']['title']);
+    $this->assertSame(
+      ['/admin/things/list/?page=1', '/admin/things/list/?page=2'],
+      [$pagination['pages'][1]['attrs']['href'], $pagination['pages'][2]['attrs']['href']],
+    );
   }
 
   public function testTheOrderingSortOverrideDrivesOrderValid(): void
