@@ -35,7 +35,7 @@ class MediasFileDownloadTest extends TestCase
 {
   private const GIF = 'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
 
-  private const SAFETY_HEADERS = ['X-Content-Type-Options' => ['nosniff']];
+  private const SAFETY_HEADERS = ['X-Content-Type-Options' => ['nosniff'], 'Content-Security-Policy' => ['sandbox']];
 
   private string $base = '';
   private string $root = '';
@@ -81,6 +81,7 @@ class MediasFileDownloadTest extends TestCase
     $this->assertSame([
       'Content-Type' => ['image/gif'],
       'X-Content-Type-Options' => ['nosniff'],
+      'Content-Security-Policy' => ['sandbox'],
       'Content-Disposition' => ['inline; filename="une-photo.gif"'],
     ], $response->getHeaders());
     $this->assertSame(\base64_decode(self::GIF), $this->body($response));
@@ -133,6 +134,69 @@ class MediasFileDownloadTest extends TestCase
 
     $this->assertSame(200, $response->getStatusCode());
     $this->assertSame(\base64_decode(self::GIF), $this->body($response));
+  }
+
+  // ------------------------------------------------ active content (D34) --
+
+  /**
+   * D34 (2026-10-10): every media went out `inline` with its detected type,
+   * so an SVG or an HTML file opened at its download URL ran its scripts in
+   * the back-office origin. The admin never uploads one, but a library can
+   * hold files put there by other means.
+   */
+  #[DataProvider('activeContent')]
+  public function testActiveContentIsServedAsAnAttachment(string $fileName, string $bytes, string $type): void
+  {
+    \file_put_contents($this->root . '/photos/' . $fileName, $bytes);
+
+    $response = $this->download('photos', $fileName);
+
+    $this->assertSame(200, $response->getStatusCode());
+    $this->assertSame($type, $response->getHeaderLine('Content-Type'));
+    $this->assertSame('attachment; filename="' . $fileName . '"', $response->getHeaderLine('Content-Disposition'));
+    $this->assertSame('sandbox', $response->getHeaderLine('Content-Security-Policy'));
+    $this->assertSame($bytes, $this->body($response));
+  }
+
+  public static function activeContent(): array
+  {
+    return [
+      'an svg with a script' => ['dessin.svg', '<svg xmlns="http://www.w3.org/2000/svg"><script>alert(1)</script></svg>', 'image/svg+xml'],
+      'an html page' => ['page.html', '<!DOCTYPE html><html><body><script>alert(1)</script></body></html>', 'text/html'],
+      'an xhtml page read as xml' => ['page.xhtml', "<?xml version=\"1.0\"?>\n<html xmlns=\"http://www.w3.org/1999/xhtml\"><body><script>alert(1)</script></body></html>", 'text/xml'],
+      'a script read as text' => ['outil.js', 'alert(document.cookie);', 'text/plain'],
+      'plain text' => ['notes.txt', 'des notes', 'text/plain'],
+    ];
+  }
+
+  #[DataProvider('attachmentTypes')]
+  public function testTheAttachmentRuleMatchesTheTypeFamilies(string $type, bool $attachment): void
+  {
+    $this->assertSame($attachment, $this->controller->servesAsAttachment($type));
+  }
+
+  public static function attachmentTypes(): array
+  {
+    return [
+      'svg' => ['image/svg+xml', true],
+      'svg, upper case' => ['IMAGE/SVG+XML', true],
+      'any text' => ['text/csv', true],
+      'text with a charset' => ['text/html; charset=utf-8', true],
+      'xml' => ['application/xml', true],
+      'xhtml' => ['application/xhtml+xml', true],
+      'a gif' => ['image/gif', false],
+      'a jpeg' => ['image/jpeg', false],
+      'a pdf' => ['application/pdf', false],
+      'octet-stream' => ['application/octet-stream', false],
+    ];
+  }
+
+  public function testAPictureStaysInlineInsideTheSandbox(): void
+  {
+    $response = $this->download('photos', 'une-photo.gif');
+
+    $this->assertSame('inline; filename="une-photo.gif"', $response->getHeaderLine('Content-Disposition'));
+    $this->assertSame('sandbox', $response->getHeaderLine('Content-Security-Policy'));
   }
 
   // ---------------------------------------------------------- refusals --
@@ -211,13 +275,13 @@ class MediasFileDownloadTest extends TestCase
   public static function hostileNames(): array
   {
     return [
-      'a double quote' => ['fileName' => 'a"b.txt', 'disposition' => 'inline; filename="ab.txt"'],
-      'a quote closing the parameter early' => ['fileName' => 'a"; filename=evil.html', 'disposition' => 'inline; filename="a; filename=evil.html"'],
-      'CRLF and a header' => ['fileName' => "x\r\nSet-Cookie: a=1.txt", 'disposition' => 'inline; filename="xSet-Cookie: a=1.txt"'],
-      'a lone CR' => ['fileName' => "a\rb.txt", 'disposition' => 'inline; filename="ab.txt"'],
-      'a lone LF' => ['fileName' => "a\nb.txt", 'disposition' => 'inline; filename="ab.txt"'],
-      'quote and CRLF together' => ['fileName' => "a\"\r\nX-Evil: 1.txt", 'disposition' => 'inline; filename="aX-Evil: 1.txt"'],
-      'a semicolon stays inside the quotes' => ['fileName' => 'a;b.txt', 'disposition' => 'inline; filename="a;b.txt"'],
+      'a double quote' => ['fileName' => 'a"b.txt', 'disposition' => 'attachment; filename="ab.txt"'],
+      'a quote closing the parameter early' => ['fileName' => 'a"; filename=evil.html', 'disposition' => 'attachment; filename="a; filename=evil.html"'],
+      'CRLF and a header' => ['fileName' => "x\r\nSet-Cookie: a=1.txt", 'disposition' => 'attachment; filename="xSet-Cookie: a=1.txt"'],
+      'a lone CR' => ['fileName' => "a\rb.txt", 'disposition' => 'attachment; filename="ab.txt"'],
+      'a lone LF' => ['fileName' => "a\nb.txt", 'disposition' => 'attachment; filename="ab.txt"'],
+      'quote and CRLF together' => ['fileName' => "a\"\r\nX-Evil: 1.txt", 'disposition' => 'attachment; filename="aX-Evil: 1.txt"'],
+      'a semicolon stays inside the quotes' => ['fileName' => 'a;b.txt', 'disposition' => 'attachment; filename="a;b.txt"'],
     ];
   }
 

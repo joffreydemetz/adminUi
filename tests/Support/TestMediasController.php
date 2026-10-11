@@ -22,6 +22,12 @@ class TestMediasController
 {
   use MediasControllerTrait;
 
+  /** The download disposition rule, opened up for its own test. */
+  public function servesAsAttachment(string $mime): bool
+  {
+    return $this->mediaServedAsAttachment($mime);
+  }
+
   /** The session bag mediaStateLoad() / mediaStateSave() read and write. */
   public array $state = [];
 

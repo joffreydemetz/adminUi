@@ -648,14 +648,34 @@ trait MediasControllerTrait
 
     \fclose($handle);
 
-    $mime = $this->mediaManager()->getFileInfos($folder, $fileName)?->mime;
+    $mime = (string)$this->mediaManager()->getFileInfos($folder, $fileName)?->mime;
+    $mime = '' !== $mime ? $mime : 'application/octet-stream';
+
+    // Two belts against a media file running script in the back-office origin
+    // (D34): a type that can carry script (SVG, HTML, XML, any text) is handed
+    // over as a download, and every response is sandboxed, so even an inline
+    // one gets an opaque origin with no script. nosniff pins the type.
+    $disposition = $this->mediaServedAsAttachment($mime) ? 'attachment' : 'inline';
 
     return $response
-      ->withHeader('Content-Type', '' !== (string)$mime ? (string)$mime : 'application/octet-stream')
-      // A media file is never HTML, but the browser is the one that decides —
-      // pin the type it may sniff to and hand it a name.
+      ->withHeader('Content-Type', $mime)
       ->withHeader('X-Content-Type-Options', 'nosniff')
-      ->withHeader('Content-Disposition', 'inline; filename="' . \str_replace(['"', "\r", "\n"], '', $fileName) . '"');
+      ->withHeader('Content-Security-Policy', 'sandbox')
+      ->withHeader('Content-Disposition', $disposition . '; filename="' . \str_replace(['"', "\r", "\n"], '', $fileName) . '"');
+  }
+
+  /**
+   * Is this a type a browser would render as a document (and so run script
+   * from) rather than display as a picture or hand to a plugin ?
+   */
+  protected function mediaServedAsAttachment(string $mime): bool
+  {
+    $mime = \strtolower(\trim(\explode(';', $mime, 2)[0]));
+
+    return 'image/svg+xml' === $mime
+      || \str_starts_with($mime, 'text/')
+      || 'application/xml' === $mime
+      || 'application/xhtml+xml' === $mime;
   }
 
   // ---------------------------------------------------------------- upload --
