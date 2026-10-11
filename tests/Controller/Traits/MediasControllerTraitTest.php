@@ -782,6 +782,41 @@ class MediasControllerTraitTest extends TestCase
   }
 
   /**
+   * An upload the bridge cannot put on disk (its stream is gone) is an
+   * operation failure carrying the reason, never a 500.
+   */
+  public function testAnUploadThatCannotBeReadIsAnOperationFailureCarryingTheReason(): void
+  {
+    $unreadable = new class implements \Psr\Http\Message\UploadedFileInterface {
+      public function getStream(): \Psr\Http\Message\StreamInterface { throw new \RuntimeException('the upload stream is gone'); }
+      public function moveTo(string $targetPath): void {}
+      public function getSize(): ?int { return 42; }
+      public function getError(): int { return \UPLOAD_ERR_OK; }
+      public function getClientFilename(): ?string { return 'paysage.gif'; }
+      public function getClientMediaType(): ?string { return 'image/gif'; }
+    };
+
+    $request = (new ServerRequestFactory())
+      ->createServerRequest('POST', '/admin/json/mediamanager/upload')
+      ->withParsedBody(['folder' => ''])
+      ->withUploadedFiles(['fileUploadName' => $unreadable]);
+
+    // tempnam() keeps three prefix characters on Windows, all of them elsewhere
+    $spools = static fn(): array => \glob(\sys_get_temp_dir() . '/jdz*') ?: [];
+    $before = $spools();
+
+    $response = $this->controller->upload($request, new Response());
+
+    $this->assertSame(403, $response->getStatusCode());
+    $this->assertSame('MEDIAMANAGER_ERROR_OPERATION_FAILED', $this->json($response)['error']);
+    $this->assertSame(
+      ['MEDIAMANAGER_ERROR_OPERATION_FAILED', ['%error%' => 'the upload stream is gone']],
+      \end($this->controller->translations),
+    );
+    $this->assertSame([], \array_values(\array_diff($spools(), $before)), 'the failed spool left its temporary file behind');
+  }
+
+  /**
    * jdz/mediamanager 3.0 answers a missing library root up front (its stats
    * refuse uploads) instead of failing in the middle of the move.
    */

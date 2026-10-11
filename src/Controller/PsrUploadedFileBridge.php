@@ -88,23 +88,32 @@ final class PsrUploadedFileBridge
       throw new \RuntimeException('Could not create a temporary file for the upload');
     }
 
-    $stream = $file->getStream();
+    try {
+      $stream = $file->getStream();
 
-    if (true === $stream->isSeekable()) {
-      $stream->rewind();
+      if (true === $stream->isSeekable()) {
+        $stream->rewind();
+      }
+
+      $handle = @\fopen($path, 'wb');
+
+      if (false === $handle) {
+        throw new \RuntimeException('Could not open the temporary upload file for writing');
+      }
+
+      try {
+        while (false === $stream->eof()) {
+          \fwrite($handle, $stream->read(8192));
+        }
+      } finally {
+        \fclose($handle);
+      }
+    } catch (\Throwable $e) {
+      // a spool that failed is not an upload : drop the empty temp file
+      @\unlink($path);
+
+      throw $e;
     }
-
-    $handle = @\fopen($path, 'wb');
-
-    if (false === $handle) {
-      throw new \RuntimeException('Could not open the temporary upload file for writing');
-    }
-
-    while (false === $stream->eof()) {
-      \fwrite($handle, $stream->read(8192));
-    }
-
-    \fclose($handle);
 
     return $path;
   }
