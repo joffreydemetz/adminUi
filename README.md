@@ -22,9 +22,9 @@ composer require jdz/adminui
 - [`jdz/ui`](https://jdz.joffreydemetz.com/ui) ^1.0
 - `psr/http-message` ^1.1 || ^2.0
 
-Suggested, only for `MediasControllerTrait`: `jdz/mediamanager` (the media
-library engine it drives) and `symfony/http-foundation` (the uploaded-file type
-`jdz/mediamanager` speaks).
+Suggested, only for `MediasControllerTrait`: `jdz/mediamanager` ^3.0 (the media
+library engine it drives; 2.x still works) and `symfony/http-foundation` (the
+uploaded-file type `jdz/mediamanager` speaks).
 
 ## Contents
 
@@ -221,6 +221,16 @@ it emits exactly the JSON that JS already expects.
 composer require jdz/mediamanager
 ```
 
+**Downloads** (`GET …/medias/download`) carry `X-Content-Type-Options: nosniff`
+and `Content-Security-Policy: sandbox`, and a type that can run script when
+rendered as a document (`image/svg+xml`, any `text/*`, `application/xml`,
+`application/xhtml+xml`) goes out as `attachment` rather than `inline`, so a file
+of the library never runs in the back-office origin. **The refresh envelope's
+`filesystem.errors`** holds translated messages (jdz/mediamanager 3.0 reports a
+missing library root there, and in `stats.errors`, instead of throwing); the
+site's i18n map needs `MEDIAMANAGER_ERROR_ROOT_NOT_FOUND` (`%path%`) and
+`MEDIAMANAGER_ERROR_UPLOAD_EXTENSION` (`%ext%`, `%mime%`).
+
 A consuming controller supplies the per-site parts and nothing else:
 
 ```php
@@ -289,6 +299,7 @@ composer test
 
 ## Changelog
 
+- **2.2.2** — **Security (D34)**: media downloads are sandboxed (`Content-Security-Policy: sandbox`) and SVG, HTML, XML and text files go out as attachments, so none can run script in the admin origin. The envelope translates jdz/mediamanager 3.0's `filesystem.errors` (a missing library root is a message, no longer a 500); a failed upload spool no longer leaves its temporary file behind. Tested against jdz/mediamanager 3.0.
 - **2.2.1** — The deprecated `Controller\AdminControllerTrait` / `MediasControllerTrait` names are kept through 2.x, removed in 3.0.0 (their docblocks still said 2.1.0). No API change.
 - **2.2.0** — Docblock wording only; no API change.
 - **2.1.0** — Template names come from the site: `adminViewName()` /
