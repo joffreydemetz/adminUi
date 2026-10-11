@@ -83,6 +83,33 @@ class MediasControllerTraitTest extends TestCase
     $this->assertSame('csrf-token', $data['dz']['params']['_csrf']);
   }
 
+  /**
+   * jdz/mediamanager 3.0 answers a missing library root with empty results
+   * carrying an error entry (it used to throw: a 500 on the media screen).
+   * The envelope hands the screen translated messages, like the stats errors.
+   */
+  public function testAMissingLibraryRootListsNothingWithATranslatedError(): void
+  {
+    $missing = $this->root . '/absent-library';
+    $controller = new TestMediasController($missing);
+
+    $data = $this->json($controller->loadFs($this->get(['folder' => 'photos']), new Response()));
+
+    $this->assertSame([], $data['filesystem']['folders']);
+    $this->assertSame([], $data['filesystem']['files']);
+    $this->assertSame(['MEDIAMANAGER_ERROR_ROOT_NOT_FOUND'], $data['filesystem']['errors']);
+    $this->assertSame(['MEDIAMANAGER_ERROR_ROOT_NOT_FOUND'], $data['stats']['errors']);
+    $this->assertFalse($data['stats']['uploadable']);
+    $this->assertContains(['MEDIAMANAGER_ERROR_ROOT_NOT_FOUND', ['%path%' => Path::canonicalize($missing)]], $controller->translations);
+  }
+
+  public function testAListingCarriesAnEmptyErrorList(): void
+  {
+    $data = $this->json($this->controller->loadFs($this->get(['folder' => 'photos']), new Response()));
+
+    $this->assertSame([], $data['filesystem']['errors']);
+  }
+
   public function testLoadFsEntersAFolderAndResolvesThumbs(): void
   {
     $data = $this->json($this->controller->loadFs($this->get(['folder' => 'photos']), new Response()));

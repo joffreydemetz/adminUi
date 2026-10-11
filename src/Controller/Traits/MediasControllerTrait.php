@@ -819,11 +819,7 @@ trait MediasControllerTrait
       'dz' => $this->mediaDropzoneConfig(),
       'stats' => $this->mediaStats(),
       'breadcrumbs' => $this->mediaManager()->getBreadcrumbs($folder),
-      'filesystem' => $this->mediaManager()->getFilesystem(
-        $folder,
-        $this->mediaGet('only'),
-        fn(string $relPath, string $fileName): string => $this->mediaThumbUrl($relPath, $this->mediaThumbWidth()),
-      ),
+      'filesystem' => $this->mediaFilesystem($folder),
       'folders' => $this->mediaManager()->getFolderSelectList(),
       'mm' => [
         'folder' => $this->mediaGet('folder'),
@@ -845,6 +841,29 @@ trait MediasControllerTrait
       ],
       $this->mediaManager()->getDropzoneParams($uploadType),
     );
+  }
+
+  /**
+   * The listing of a folder, its error entries (jdz/mediamanager 3.0: a
+   * missing library root) already translated, like the stats errors.
+   */
+  protected function mediaFilesystem(string $folder): array
+  {
+    $filesystem = $this->mediaManager()->getFilesystem(
+      $folder,
+      $this->mediaGet('only'),
+      fn(string $relPath, string $fileName): string => $this->mediaThumbUrl($relPath, $this->mediaThumbWidth()),
+    );
+
+    $errors = [];
+
+    foreach ($filesystem['errors'] ?? [] as $error) {
+      $errors[] = $this->mediaTranslate($error['key'], $error['params']);
+    }
+
+    $filesystem['errors'] = $errors;
+
+    return $filesystem;
   }
 
   /**
