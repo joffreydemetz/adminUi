@@ -618,7 +618,7 @@ class MediasControllerTraitTest extends TestCase
       ['error' => 'MEDIAMANAGER_ERROR_PROTECT_DISABLED'],
       $this->json($controller->{$task}($this->get(['fileName' => 'une-photo.gif']), new Response())),
     );
-    $this->assertFileDoesNotExist($this->protectPath() . '/une-photo.gif');
+    $this->assertFileDoesNotExist($this->protectPath() . '/photos/une-photo.gif');
   }
 
   public static function watermarkingOff(): array
@@ -639,14 +639,16 @@ class MediasControllerTraitTest extends TestCase
   {
     $controller = $this->watermarkingController();
     $pristine = (string)\file_get_contents($this->root . '/photos/une-photo.gif');
-    \file_put_contents($this->protectPath() . '/une-photo.gif', $pristine);
+    // jdz/mediamanager 3.0 files a backup under the library-relative path
+    \mkdir($this->protectPath() . '/photos');
+    \file_put_contents($this->protectPath() . '/photos/une-photo.gif', $pristine);
     \file_put_contents($this->root . '/photos/une-photo.gif', 'stamped');
 
     $data = $this->json($controller->fileUnprotect($this->get(['fileName' => 'une-photo.gif']), new Response()));
 
     $this->assertSame(['success' => true, 'message' => 'MEDIAMANAGER_SUCCESS_UNPROTECT'], $data);
     $this->assertSame($pristine, \file_get_contents($this->root . '/photos/une-photo.gif'));
-    $this->assertFileDoesNotExist($this->protectPath() . '/une-photo.gif');
+    $this->assertFileDoesNotExist($this->protectPath() . '/photos/une-photo.gif');
   }
 
   #[DataProvider('unprotectRefusals')]
@@ -680,7 +682,7 @@ class MediasControllerTraitTest extends TestCase
 
     $this->assertSame(['success' => true, 'updateWatermark' => false, 'message' => 'MEDIAMANAGER_SUCCESS_PROTECT'], $first);
     $this->assertSame(['success' => true, 'updateWatermark' => true, 'message' => 'MEDIAMANAGER_SUCCESS_PROTECT'], $second);
-    $this->assertFileExists($this->protectPath() . '/une-photo.gif');
+    $this->assertFileExists($this->protectPath() . '/photos/une-photo.gif');
   }
 
   public function testProtectRefusesWhatIsNotAnImage(): void
@@ -752,7 +754,11 @@ class MediasControllerTraitTest extends TestCase
     $this->assertSame(['MEDIAMANAGER_ERROR_UPLOAD_TOO_MANY_FILES', ['%maxFileCount%' => 1]], \end($controller->translations));
   }
 
-  public function testAnUploadThatBreaksIsAnOperationFailureCarryingTheReason(): void
+  /**
+   * jdz/mediamanager 3.0 answers a missing library root up front (its stats
+   * refuse uploads) instead of failing in the middle of the move.
+   */
+  public function testAnUploadIntoAMissingLibraryIsRefusedWithTheRootPath(): void
   {
     $missing = $this->root . '/absent-library';
     $controller = new TestMediasController($missing);
@@ -760,9 +766,9 @@ class MediasControllerTraitTest extends TestCase
     $response = $controller->upload($this->upload('paysage.gif', 'image/gif', ['folder' => '']), new Response());
 
     $this->assertSame(403, $response->getStatusCode());
-    $this->assertSame('MEDIAMANAGER_ERROR_OPERATION_FAILED', $this->json($response)['error']);
+    $this->assertSame('MEDIAMANAGER_ERROR_ROOT_NOT_FOUND', $this->json($response)['error']);
     $this->assertSame(
-      ['MEDIAMANAGER_ERROR_OPERATION_FAILED', ['%error%' => 'The "' . Path::canonicalize($missing) . '" directory does not exist.']],
+      ['MEDIAMANAGER_ERROR_ROOT_NOT_FOUND', ['%path%' => Path::canonicalize($missing)]],
       \end($controller->translations),
     );
   }
